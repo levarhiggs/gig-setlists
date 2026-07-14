@@ -8,12 +8,13 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="favicon.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=20260713b">
+<link rel="stylesheet" href="style.css?v=20260714a">
 </head>
 <body>
 <header class="top-bar">
   <span class="app-title">Setlist Organizer</span>
   <div class="top-bar-actions">
+    <button id="player-mode-btn" class="btn-icon" aria-pressed="false" aria-label="Toggle player mode">&#9654;</button>
     <button id="link-mode-btn" class="btn-icon" aria-pressed="false" aria-label="Toggle link mode">&#128279;</button>
     <div class="add-menu-wrap">
       <button id="add-btn" class="btn-secondary">Add+</button>
@@ -22,6 +23,7 @@
         <button class="dropdown-item" data-action="add-set">Add Set</button>
         <button class="dropdown-item" data-action="add-song">Add Song</button>
         <button class="dropdown-item" data-action="bulk-import">Bulk Import</button>
+        <button class="dropdown-item" data-action="attach-audio">Attach Audio Files…</button>
         <button class="dropdown-item" data-action="open-saved">Open Saved Gig…</button>
       </div>
     </div>

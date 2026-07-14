@@ -13,6 +13,7 @@ import {
 import { reindex } from '../lib/ordering.js';
 import { makeSet, makeLink, makeGig, makeSong, makeSongInstance, newInstanceId, newLinkId, ORDER_STEP } from './models.js';
 import { assignColor } from '../lib/colors.js';
+import { uploadSongAudio, deleteSongAudio } from '../firebase/audio-storage.js';
 
 const LS_KEY = 'setlist_app_state_v1';
 
@@ -67,6 +68,30 @@ export function updateSongAttributes(songId, { key, bpm, lead, notes, lyrics }) 
   song.updatedAt = new Date().toISOString();
   notify();
   saveSongRemote(song).catch(err => console.error('saveSong failed:', err));
+}
+
+// Uploads an MP3 File to Storage and records its URL on the Song. Used by
+// both the per-song attach flow and the bulk-upload matcher.
+export async function attachAudioToSong(songId, file) {
+  const song = state.songs[songId];
+  if (!song) return;
+  const url = await uploadSongAudio(songId, file);
+  song.audioUrl = url;
+  song.audioFileName = file.name;
+  song.updatedAt = new Date().toISOString();
+  notify();
+  await saveSongRemote(song);
+}
+
+export async function removeAudioFromSong(songId) {
+  const song = state.songs[songId];
+  if (!song || !song.audioUrl) return;
+  await deleteSongAudio(songId);
+  song.audioUrl = null;
+  song.audioFileName = null;
+  song.updatedAt = new Date().toISOString();
+  notify();
+  await saveSongRemote(song);
 }
 
 export function getSong(songId) {

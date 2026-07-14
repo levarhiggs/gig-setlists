@@ -1,4 +1,4 @@
-const CACHE = 'gig-setlists-v1';
+const CACHE = 'gig-setlists-v2';
 const SHELL = [
   '/gig-setlists/',
   '/gig-setlists/index.html',
@@ -15,13 +15,19 @@ const SHELL = [
   '/gig-setlists/src/data/store.js',
   '/gig-setlists/src/features/add-song/add-song-modal.js',
   '/gig-setlists/src/features/attribute-modal/attribute-modal.js',
+  '/gig-setlists/src/features/bulk-audio/bulk-local-attach.js',
   '/gig-setlists/src/features/gig-view/gig-view.js',
   '/gig-setlists/src/features/linking/link-picker.js',
   '/gig-setlists/src/features/linking/linking.js',
+  '/gig-setlists/src/features/player/attach-audio-modal.js',
+  '/gig-setlists/src/features/player/local-audio-library.js',
+  '/gig-setlists/src/features/player/mini-player.js',
+  '/gig-setlists/src/features/player/player-engine.js',
   '/gig-setlists/src/features/save-gig/save-gig.js',
   '/gig-setlists/src/features/sets/set-menu.js',
   '/gig-setlists/src/firebase/init.js',
   '/gig-setlists/src/firebase/sync.js',
+  '/gig-setlists/src/lib/audio-match.js',
   '/gig-setlists/src/lib/chain-drag.js',
   '/gig-setlists/src/lib/chain-group-drag.js',
   '/gig-setlists/src/lib/colors.js',

@@ -9,12 +9,16 @@ import { initAddMenu } from './ui/add-menu.js';
 import { initLinking, isLinkModeOn, cancelLinkMode } from './features/linking/linking.js';
 import { openLinkPicker } from './features/linking/link-picker.js';
 import { openSaveDialog, openLoadGigPicker } from './features/save-gig/save-gig.js';
+import { isPlayerModeOn, togglePlayerMode, onTrackChange } from './features/player/player-engine.js';
+import { mountMiniPlayer } from './features/player/mini-player.js';
+import { PLAYER_MODE_ENABLED } from './config.js';
 
 const SEED_GIG_ID = 'gig_july_12';
 
 const gigViewEl = document.getElementById('gig-view');
 const importInput = document.getElementById('import-file');
 const linkModeBtn = document.getElementById('link-mode-btn');
+const playerModeBtn = document.getElementById('player-mode-btn');
 const saveBtn = document.getElementById('save-btn');
 
 subscribe(() => renderGigView(gigViewEl));
@@ -101,6 +105,21 @@ linkModeBtn.addEventListener('click', () => {
   } else {
     openLinkPicker();
   }
+});
+
+playerModeBtn.addEventListener('click', () => {
+  if (!PLAYER_MODE_ENABLED) {
+    alert('Player Mode — coming soon!');
+    return;
+  }
+  togglePlayerMode();
+});
+
+onTrackChange(state => {
+  playerModeBtn.setAttribute('aria-pressed', String(state.playerModeOn));
+  playerModeBtn.classList.toggle('play-lit', state.playerModeOn);
+  mountMiniPlayer(document.body);
+  renderGigView(gigViewEl); // now-playing row highlight + no-audio dimming depend on this
 });
 
 bootstrap();

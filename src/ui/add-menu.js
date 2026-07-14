@@ -5,6 +5,7 @@
 
 import { addSet } from '../data/store.js';
 import { openAddSongModal } from '../features/add-song/add-song-modal.js';
+import { openBulkLocalAttachModal } from '../features/bulk-audio/bulk-local-attach.js';
 
 export function initAddMenu({ onBulkImport, onOpenSaved }) {
   const btn = document.getElementById('add-btn');
@@ -43,6 +44,8 @@ export function initAddMenu({ onBulkImport, onOpenSaved }) {
         onBulkImport?.();
       } else if (action === 'open-saved') {
         onOpenSaved?.();
+      } else if (action === 'attach-audio') {
+        openBulkLocalAttachModal();
       }
     });
   });

@@ -11,6 +11,9 @@ import { isLinkModeOn, isSelected, toggleSelection, getActiveSetId, finalizeLink
 import { openSetMenu } from '../sets/set-menu.js';
 import { bindSetHeaderGestures } from '../../lib/set-header-gestures.js';
 import { bindSetDragHandle } from '../../lib/set-drag.js';
+import { isPlayerModeOn, getPlayerState, playInstance, onPlayerChange } from '../player/player-engine.js';
+import { hasLocalAudio } from '../player/local-audio-library.js';
+import { promptAttachLocalAudio } from '../player/attach-audio-modal.js';
 
 let gigViewContainerEl = null;
 const collapsedSetIds = new Set(); // session-only UI state, not persisted
@@ -139,11 +142,14 @@ function renderSetBlock(set, state) {
     const ordered = sortInstancesForDisplay(rawInstances, set.songOrderMode, state.songs);
 
     const linkMode = isLinkModeOn();
+    const playerMode = isPlayerModeOn();
     const activeSetId = getActiveSetId();
     const setLocked = linkMode && activeSetId && activeSetId !== set.setId;
+    const nowPlayingInstanceId = getPlayerState().currentInstanceId;
     ordered.forEach((inst, i) => {
-      const row = renderSongRow(inst, state, i + 1, linkMode, set.setId, setLocked, set.attributeDisplay, hideStrikethrough);
+      const row = renderSongRow(inst, state, i + 1, linkMode, set.setId, setLocked, set.attributeDisplay, hideStrikethrough, playerMode, nowPlayingInstanceId);
       if (linkMode) wireLinkModeRow(row, set.setId, setLocked);
+      else if (playerMode) wirePlayerModeRow(row);
       else wireRowGestures(row);
       list.appendChild(row);
     });
@@ -154,7 +160,7 @@ function renderSetBlock(set, state) {
   return block;
 }
 
-function renderSongRow(instance, state, seq, linkMode, setId, setLocked, attributeDisplay, hideStrikethrough) {
+function renderSongRow(instance, state, seq, linkMode, setId, setLocked, attributeDisplay, hideStrikethrough, playerMode, nowPlayingInstanceId) {
   const song = state.songs[instance.songId] || {};
   const li = document.createElement('li');
   li.className = 'song-row';
@@ -185,10 +191,22 @@ function renderSongRow(instance, state, seq, linkMode, setId, setLocked, attribu
 
   const grip = linkMode ? '' : '<span class="song-grip" aria-label="Drag to reorder">&#9776;</span>';
 
+  let playGlyph = '';
+  if (playerMode) {
+    const hasAudio = hasLocalAudio(song.songId);
+    const isNowPlaying = instance.instanceId === nowPlayingInstanceId;
+    if (!hasAudio) li.classList.add('no-audio');
+    if (isNowPlaying) li.classList.add('now-playing');
+    playGlyph = isNowPlaying
+      ? '<span class="player-eq"><span></span><span></span><span></span></span>'
+      : `<span class="song-play-glyph">${hasAudio ? '&#9654;' : '&#65291;'}</span>`;
+  }
+
   li.innerHTML = `
     ${checkbox}
     <span class="song-seq">${seq}</span>
     ${dot}
+    ${playGlyph}
     ${statusIcon ? `<span class="song-status-icon">${statusIcon}</span>` : ''}
     <span class="song-title">${escapeHtml(song.title || '(unknown song)')}</span>
     ${meta ? `<span class="song-meta">${escapeHtml(meta)}</span>` : ''}
@@ -199,8 +217,8 @@ function renderSongRow(instance, state, seq, linkMode, setId, setLocked, attribu
 
 function wireRowGestures(row) {
   bindRowGestures(row, {
-    onTap: () => openAttributeModal(row.dataset.instanceId),
-    onDoubleTap: () => toggleCompleted(row.dataset.instanceId),
+    onTap: () => toggleCompleted(row.dataset.instanceId),
+    onDoubleTap: () => openAttributeModal(row.dataset.instanceId),
   });
 
   const grip = row.querySelector('.song-grip');
@@ -220,6 +238,21 @@ function wireRowGestures(row) {
       startChainGroupDrag(dot, row, e.pointerId, e, { container: gigViewContainerEl });
     });
   }
+}
+
+function wirePlayerModeRow(row) {
+  const instanceId = row.dataset.instanceId;
+  row.addEventListener('click', () => {
+    const state = getState();
+    const instance = state.instances[instanceId];
+    if (!instance) return;
+    const song = state.songs[instance.songId];
+    if (hasLocalAudio(instance.songId)) {
+      playInstance(instanceId);
+    } else {
+      promptAttachLocalAudio(instance.songId, song?.title || 'this song', () => playInstance(instanceId));
+    }
+  });
 }
 
 function wireLinkModeRow(row, setId, setLocked) {
