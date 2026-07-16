@@ -16,9 +16,8 @@ export const LINK_COLORS = [
 export const DOUBLE_TAP_MS = 300;
 export const LONG_PRESS_MS = 400;
 
-// Player Mode currently only supports local-file audio (no cloud
-// storage/streaming wired up yet — see project notes). Fully functional
-// on localhost for continued development; shows a "Coming Soon" message
-// on the deployed site so it isn't exposed half-finished to real users.
-export const PLAYER_MODE_ENABLED =
-  location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+// Player Mode streams audio from a Cloudflare R2 bucket (song.audioUrl,
+// see src/features/player/audio-source.js) with local-file attachment as
+// a same-session fallback — works on any device, including phones, so
+// it's enabled everywhere now.
+export const PLAYER_MODE_ENABLED = true;

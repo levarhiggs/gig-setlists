@@ -1,0 +1,44 @@
+{
+  "name": "gig-setlists",
+  "version": "1.0.0",
+  "description": "Phone-first setlist/medley organizer, packaged as a desktop app.",
+  "private": true,
+  "main": "electron/main.js",
+  "scripts": {
+    "electron": "electron .",
+    "dist": "electron-builder",
+    "upload-audio": "node scripts/upload-audio-to-r2.cjs"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-s3": "^3.1088.0",
+    "dotenv": "^17.4.2",
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3",
+    "firebase": "^12.16.0"
+  },
+  "build": {
+    "appId": "com.levarhiggs.gigsetlists",
+    "productName": "Gig Setlists",
+    "files": [
+      "index.html",
+      "style.css",
+      "manifest.json",
+      "favicon.png",
+      "icon-192.png",
+      "icon-512.png",
+      "src/**/*",
+      "electron/**/*",
+      "!sw.js"
+    ],
+    "win": {
+      "target": "portable",
+      "icon": "icon-512.png"
+    },
+    "portable": {
+      "artifactName": "GigSetlists-Portable.exe"
+    },
+    "directories": {
+      "output": "dist-electron"
+    }
+  }
+}

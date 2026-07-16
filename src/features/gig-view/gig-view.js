@@ -12,8 +12,10 @@ import { openSetMenu } from '../sets/set-menu.js';
 import { bindSetHeaderGestures } from '../../lib/set-header-gestures.js';
 import { bindSetDragHandle } from '../../lib/set-drag.js';
 import { isPlayerModeOn, getPlayerState, playInstance, onPlayerChange } from '../player/player-engine.js';
-import { hasLocalAudio } from '../player/local-audio-library.js';
+import { hasPlayableAudio } from '../player/audio-source.js';
 import { promptAttachLocalAudio } from '../player/attach-audio-modal.js';
+import { autoAttachMissingAudio } from '../player/auto-attach.js';
+import { notifyExplicitPlayRequested } from '../player/player-lyrics.js';
 
 let gigViewContainerEl = null;
 const collapsedSetIds = new Set(); // session-only UI state, not persisted
@@ -193,7 +195,7 @@ function renderSongRow(instance, state, seq, linkMode, setId, setLocked, attribu
 
   let playGlyph = '';
   if (playerMode) {
-    const hasAudio = hasLocalAudio(song.songId);
+    const hasAudio = hasPlayableAudio(song);
     const isNowPlaying = instance.instanceId === nowPlayingInstanceId;
     if (!hasAudio) li.classList.add('no-audio');
     if (isNowPlaying) li.classList.add('now-playing');
@@ -242,16 +244,30 @@ function wireRowGestures(row) {
 
 function wirePlayerModeRow(row) {
   const instanceId = row.dataset.instanceId;
-  row.addEventListener('click', () => {
+  row.addEventListener('click', async () => {
     const state = getState();
     const instance = state.instances[instanceId];
     if (!instance) return;
     const song = state.songs[instance.songId];
-    if (hasLocalAudio(instance.songId)) {
+    notifyExplicitPlayRequested();
+
+    if (hasPlayableAudio(song)) {
       playInstance(instanceId);
-    } else {
-      promptAttachLocalAudio(instance.songId, song?.title || 'this song', () => playInstance(instanceId));
+      return;
     }
+
+    // Try the linked music folder before falling back to a manual picker —
+    // covers songs added/renamed since the last folder scan this session.
+    // (Only relevant on desktop; on a phone with no folder linked this is
+    // a fast no-op and falls straight through to the manual picker.)
+    await autoAttachMissingAudio().catch(() => {});
+    if (hasPlayableAudio(state.songs[instance.songId])) {
+      renderGigView(gigViewContainerEl);
+      playInstance(instanceId);
+      return;
+    }
+
+    promptAttachLocalAudio(instance.songId, song?.title || 'this song', () => playInstance(instanceId));
   });
 }
 

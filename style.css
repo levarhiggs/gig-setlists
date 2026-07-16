@@ -2,6 +2,10 @@
 
 * { box-sizing: border-box; }
 
+html {
+  color-scheme: dark;
+}
+
 html, body {
   margin: 0;
   padding: 0;
@@ -442,6 +446,11 @@ body.modal-open {
   flex: 1;
 }
 
+.attr-title-hint {
+  padding: 0 16px;
+  margin: 6px 0 0;
+}
+
 .modal-close {
   background: #262a36;
   border: none;
@@ -637,6 +646,12 @@ body.modal-open {
   font-size: 0.95rem;
 }
 
+.lyrics-edit-btn.active {
+  background: #4c6ef5;
+  border-color: #4c6ef5;
+  color: #fff;
+}
+
 #attr-lyrics {
   transition: font-size 0.1s;
 }
@@ -664,15 +679,18 @@ body.modal-open {
   flex-shrink: 0;
 }
 
-.lyrics-restore-btn {
-  background: #262a36;
-  border: 1px solid #363c4d;
-  border-radius: 8px;
+.lyrics-maximized-overlay .lyrics-nav-bar {
+  padding-top: 0;
+  padding-bottom: 12px;
+}
+
+.lyrics-maximized-title {
+  font-size: 1rem;
+  font-weight: 700;
   color: #f2f2f2;
-  font-size: 0.9rem;
-  font-weight: 600;
-  padding: 10px 14px;
-  min-height: 44px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 #attr-lyrics-maximized {
@@ -692,6 +710,69 @@ body.modal-open {
 #attr-lyrics-maximized:focus {
   outline: none;
   border-color: #4c6ef5;
+}
+
+.lyrics-nav-bar {
+  display: flex;
+  gap: 8px;
+  padding-top: 12px;
+  flex-shrink: 0;
+}
+
+.lyrics-nav-btn {
+  flex: 1;
+  background: #262a36;
+  border: 1px solid #363c4d;
+  border-radius: 8px;
+  color: #f2f2f2;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 12px 8px;
+  min-height: 44px;
+}
+
+.lyrics-nav-btn:active {
+  background: #2f3444;
+}
+
+.lyrics-nav-btn:disabled {
+  opacity: 0.4;
+}
+
+/* ── player-lyrics: full-screen lyrics synced to Player Mode playback ── */
+
+.lyrics-close-btn {
+  background: #262a36;
+  border: 1px solid #363c4d;
+  border-radius: 8px;
+  color: #f2f2f2;
+  font-size: 1.1rem;
+  min-width: 40px;
+  min-height: 40px;
+  flex-shrink: 0;
+}
+
+#pl-lyrics {
+  flex: 1;
+  width: 100%;
+  background: #14161d;
+  border: 1px solid #262a36;
+  border-radius: 10px;
+  color: #f2f2f2;
+  padding: 14px;
+  resize: none;
+  font-family: inherit;
+  line-height: 1.6;
+  transition: font-size 0.1s;
+}
+
+.player-lyrics-dock {
+  flex-shrink: 0;
+  margin: 12px -12px calc(-1 * env(safe-area-inset-bottom, 0px));
+}
+
+.player-lyrics-dock .mini-player {
+  position: static;
 }
 
 .btn-danger {
@@ -1011,6 +1092,58 @@ body.modal-open {
 }
 .mp-btn.play-pause svg { width: 22px; height: 22px; }
 
+/* ── rehearsal loop: scrub-bar markers + controls ────────────────── */
+
+.mp-loop-marker {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  background: #f5a623;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.mp-loop-region {
+  position: absolute;
+  top: 0; bottom: 0;
+  background: rgba(245, 166, 35, 0.25);
+  pointer-events: none;
+}
+
+.mp-loop-controls {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.mp-loop-btn {
+  flex: 1;
+  background: #20242f;
+  border: 1px solid #363c4d;
+  border-radius: 6px;
+  color: #f2f2f2;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 8px 4px;
+  min-height: 36px;
+}
+
+.mp-loop-toggle.active {
+  background: #f5a623;
+  border-color: #f5a623;
+  color: #1a1300;
+}
+
+.mp-loop-toggle:disabled {
+  opacity: 0.4;
+}
+
+.mp-loop-clear {
+  flex: 0.6;
+  color: #8a8f9c;
+}
+
 /* ── bulk audio attach review ────────────────────────────────────── */
 
 .bulk-audio-list {
@@ -1048,4 +1181,46 @@ body.modal-open {
   color: #f2f2f2;
   font-size: 0.85rem;
   min-height: 40px;
+}
+
+/* ── activity log (admin-only) ───────────────────────────────────── */
+
+.activity-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 65vh;
+  overflow-y: auto;
+  margin-top: 8px;
+}
+
+.activity-row {
+  background: #14161d;
+  border: 1px solid #262a36;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.activity-row-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+
+.activity-who {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #4c6ef5;
+}
+
+.activity-when {
+  font-size: 0.75rem;
+  color: #5c6270;
+  flex-shrink: 0;
+}
+
+.activity-desc {
+  font-size: 0.88rem;
+  color: #f2f2f2;
 }

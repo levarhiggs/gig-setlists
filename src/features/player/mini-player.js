@@ -3,7 +3,7 @@
 
 import {
   getPlayerState, onPlayerChange, togglePlayPause, seekBy, seekTo, stop,
-  playNext, playPrevious,
+  playNext, playPrevious, setLoopStart, setLoopEnd, toggleLoopActive, clearLoop,
 } from './player-engine.js';
 import { getState, getSongsForSet } from '../../data/store.js';
 import { sortInstancesForDisplay } from '../../lib/ordering.js';
@@ -46,6 +46,11 @@ function render(container, playerState) {
   const cur = playerState.currentTime || 0;
   const pct = dur > 0 ? (cur / dur) * 100 : 0;
 
+  const { loopStart, loopEnd, loopActive } = playerState;
+  const loopStartPct = loopStart != null && dur > 0 ? (loopStart / dur) * 100 : null;
+  const loopEndPct = loopEnd != null && dur > 0 ? (loopEnd / dur) * 100 : null;
+  const loopReady = loopStart != null && loopEnd != null;
+
   barEl.innerHTML = `
     <div class="mp-track">
       <div class="mp-art">🎵</div>
@@ -59,6 +64,9 @@ function render(container, playerState) {
       <span class="mp-time">${formatTime(cur)}</span>
       <div class="mp-bar">
         <div class="mp-bar-fill" style="width:${pct}%"></div>
+        ${loopStartPct != null ? `<div class="mp-loop-marker mp-loop-marker-start" style="left:${loopStartPct}%"></div>` : ''}
+        ${loopEndPct != null ? `<div class="mp-loop-marker mp-loop-marker-end" style="left:${loopEndPct}%"></div>` : ''}
+        ${loopStartPct != null && loopEndPct != null ? `<div class="mp-loop-region" style="left:${loopStartPct}%;width:${loopEndPct - loopStartPct}%"></div>` : ''}
         <div class="mp-bar-knob" style="left:${pct}%"></div>
         <input type="range" class="mp-bar-input" min="0" max="${dur || 0}" step="0.1" value="${cur}" aria-label="Seek">
       </div>
@@ -83,6 +91,12 @@ function render(container, playerState) {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.13-9.36L23 10"/></svg>
       </button>
     </div>
+    <div class="mp-loop-controls">
+      <button class="mp-loop-btn" data-action="loop-start" aria-label="Set loop start at current position">Set Start${loopStart != null ? ` (${formatTime(loopStart)})` : ''}</button>
+      <button class="mp-loop-btn" data-action="loop-end" aria-label="Set loop end at current position">Set End${loopEnd != null ? ` (${formatTime(loopEnd)})` : ''}</button>
+      <button class="mp-loop-btn mp-loop-toggle${loopActive ? ' active' : ''}" data-action="loop-toggle" aria-pressed="${loopActive}" ${loopReady ? '' : 'disabled'}>&#8635; Loop</button>
+      ${(loopStart != null || loopEnd != null) ? '<button class="mp-loop-btn mp-loop-clear" data-action="loop-clear" aria-label="Clear loop points">Clear</button>' : ''}
+    </div>
   `;
 
   barEl.querySelector('[data-action="play-pause"]').addEventListener('click', togglePlayPause);
@@ -92,6 +106,10 @@ function render(container, playerState) {
   barEl.querySelector('[data-action="next"]').addEventListener('click', () => playNext());
   barEl.querySelector('.mp-stop').addEventListener('click', () => stop());
   barEl.querySelector('.mp-bar-input').addEventListener('input', e => seekTo(Number(e.target.value)));
+  barEl.querySelector('[data-action="loop-start"]').addEventListener('click', () => setLoopStart());
+  barEl.querySelector('[data-action="loop-end"]').addEventListener('click', () => setLoopEnd());
+  barEl.querySelector('[data-action="loop-toggle"]').addEventListener('click', () => toggleLoopActive());
+  barEl.querySelector('[data-action="loop-clear"]')?.addEventListener('click', () => clearLoop());
 }
 
 function indexInSet(instance, set) {

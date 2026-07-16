@@ -14,6 +14,12 @@ import { reindex } from '../lib/ordering.js';
 import { makeSet, makeLink, makeGig, makeSong, makeSongInstance, newInstanceId, newLinkId, ORDER_STEP } from './models.js';
 import { assignColor } from '../lib/colors.js';
 import { uploadSongAudio, deleteSongAudio } from '../firebase/audio-storage.js';
+import { logActivity } from '../firebase/activity-log.js';
+import { getUserName } from '../features/identity/identity.js';
+
+function log(action, description) {
+  logActivity({ who: getUserName(), action, description, gigId: state.gig?.gigId ?? null });
+}
 
 const LS_KEY = 'setlist_app_state_v1';
 
@@ -64,6 +70,22 @@ export function updateSongLyrics(songId, lyrics) {
   song.updatedAt = new Date().toISOString();
   notify();
   saveSongRemote(song).catch(err => console.error('saveSong failed:', err));
+  log('edit-lyrics', `Edited lyrics for "${song.title}"`);
+}
+
+// Renames the shared Song record in place — every SongInstance placement,
+// link, and attached-audio association keys off songId, never the title
+// string, so this can't disassociate anything downstream.
+export function updateSongTitle(songId, title) {
+  const song = state.songs[songId];
+  const trimmed = (title || '').trim();
+  if (!song || !trimmed) return;
+  const oldTitle = song.title;
+  song.title = trimmed;
+  song.updatedAt = new Date().toISOString();
+  notify();
+  saveSongRemote(song).catch(err => console.error('saveSong failed:', err));
+  log('rename-song', `Renamed "${oldTitle}" to "${trimmed}"`);
 }
 
 // key/bpm/lead/notes are per-INSTANCE: the same song can call for a
@@ -78,6 +100,8 @@ export function updateInstanceAttributes(instanceId, { key, bpm, lead, notes }) 
   instance.notes = notes || null;
   notify();
   saveInstanceRemote(state.gig.gigId, instance).catch(err => console.error('saveInstance failed:', err));
+  const song = state.songs[instance.songId];
+  log('edit-attributes', `Edited Key/BPM/Lead/Notes for "${song?.title ?? 'a song'}"`);
 }
 
 // Uploads an MP3 File to Storage and records its URL on the Song. Used by
@@ -91,6 +115,7 @@ export async function attachAudioToSong(songId, file) {
   song.updatedAt = new Date().toISOString();
   notify();
   await saveSongRemote(song);
+  log('attach-audio', `Attached audio file "${file.name}" to "${song.title}"`);
 }
 
 export async function removeAudioFromSong(songId) {
@@ -102,6 +127,7 @@ export async function removeAudioFromSong(songId) {
   song.updatedAt = new Date().toISOString();
   notify();
   await saveSongRemote(song);
+  log('remove-audio', `Removed attached audio from "${song.title}"`);
 }
 
 export function getSong(songId) {
@@ -121,6 +147,8 @@ export function toggleCompleted(instanceId) {
   instance.completed = next;
   notify();
   saveInstanceRemote(state.gig.gigId, instance).catch(err => console.error('saveInstance failed:', err));
+  const song = state.songs[instance.songId];
+  log('toggle-status', `Marked "${song?.title ?? 'a song'}" as ${next ?? 'active'}`);
 }
 
 // §6: form a Link from a set of instance ids (already same-set, enforced by
@@ -161,6 +189,7 @@ export function createLink(setId, orderedInstanceIds) {
   for (const inst of reindexed) {
     saveInstanceRemote(state.gig.gigId, inst).catch(err => console.error('saveInstance failed:', err));
   }
+  log('create-link', `Linked ${orderedInstanceIds.length} songs into a medley in "${set.name}"`);
 }
 
 // §6.5: dissolve an existing link entirely (used when a re-opened selection
@@ -178,6 +207,7 @@ export function dissolveLink(linkId) {
   delete state.links[linkId];
   notify();
   deleteLinkRemote(state.gig.gigId, linkId).catch(err => console.error('deleteLink failed:', err));
+  log('dissolve-link', 'Dissolved a medley link');
 }
 
 // Deletes one song placement from the gig entirely (not the master Song
@@ -191,6 +221,8 @@ export function removeInstance(instanceId) {
 
   const setId = instance.setId;
   const linkId = instance.linkId;
+  const songTitle = state.songs[instance.songId]?.title ?? 'a song';
+  const setName = state.sets[setId]?.name ?? 'a set';
 
   delete state.instances[instanceId];
 
@@ -217,22 +249,27 @@ export function removeInstance(instanceId) {
   for (const inst of reindexed) {
     saveInstanceRemote(state.gig.gigId, inst).catch(err => console.error('saveInstance failed:', err));
   }
+  log('remove-song', `Removed "${songTitle}" from "${setName}"`);
 }
 
 export function renameGig(name) {
   if (!state.gig) return;
+  const oldName = state.gig.name;
   state.gig.name = name;
   state.gig.updatedAt = new Date().toISOString();
   notify();
   saveGigMeta(state.gig).catch(err => console.error('saveGigMeta failed:', err));
+  log('rename-gig', `Renamed gig "${oldName}" to "${name}"`);
 }
 
 export function renameSet(setId, name) {
   const set = state.sets[setId];
   if (!set) return;
+  const oldName = set.name;
   set.name = name;
   notify();
   saveSetRemote(state.gig.gigId, set).catch(err => console.error('saveSet failed:', err));
+  log('rename-set', `Renamed set "${oldName}" to "${name}"`);
 }
 
 // "key" | "lead" | "none" — what secondary text shows on this set's rows.
@@ -242,6 +279,7 @@ export function setAttributeDisplay(setId, mode) {
   set.attributeDisplay = mode;
   notify();
   saveSetRemote(state.gig.gigId, set).catch(err => console.error('saveSet failed:', err));
+  log('set-attribute-display', `Changed "${set.name}" row display to ${mode}`);
 }
 
 // Deletes a set and every instance in it (dissolving any links that lose
@@ -250,6 +288,7 @@ export function setAttributeDisplay(setId, mode) {
 export function deleteSet(setId) {
   const set = state.sets[setId];
   if (!set || !state.gig) return;
+  const setName = set.name;
 
   const instancesInSet = getSongsForSet(setId);
   const touchedLinkIds = new Set(instancesInSet.map(i => i.linkId).filter(Boolean));
@@ -282,6 +321,7 @@ export function deleteSet(setId) {
   }
   deleteSetRemote(state.gig.gigId, setId).catch(err => console.error('deleteSet failed:', err));
   saveGigMeta(state.gig).catch(err => console.error('saveGigMeta failed:', err));
+  log('delete-set', `Deleted set "${setName}" (${instancesInSet.length} song${instancesInSet.length === 1 ? '' : 's'})`);
 }
 
 // Copies a set (and its song instances, minus links — a medley grouping is
@@ -325,6 +365,7 @@ export async function copySetToGig(setId, targetGigId) {
   }
   const updatedGig = { ...targetBundle.gig, sets: [...targetBundle.gig.sets, newSet.setId] };
   await saveGigMeta(updatedGig);
+  log('copy-set', `Copied set "${set.name}" (${instancesInSet.length} songs) into gig "${targetBundle.gig.name}"`);
 }
 
 // §5.2/§5.4/§6.7: move an instance (and, if linked, its whole link group as
@@ -377,6 +418,13 @@ export function moveInstance(instanceId, newSetId, insertIndex, targetOrderedIns
       deleteInstanceRemote(state.gig.gigId, oldSetId, id).catch(err => console.error('deleteInstance failed:', err));
     }
   }
+  const label = movingIds.length > 1 ? `a ${movingIds.length}-song medley` : (state.songs[instance.songId]?.title ?? 'a song');
+  if (oldSetId !== newSetId) {
+    const oldSetName = state.sets[oldSetId]?.name ?? 'a set';
+    log('move-song', `Moved ${label} from "${oldSetName}" to "${targetSet.name}"`);
+  } else {
+    log('reorder-song', `Reordered ${label} within "${targetSet.name}"`);
+  }
 }
 
 // Per-song grip drag: always moves exactly ONE instance (never the whole
@@ -415,6 +463,13 @@ export function moveSingleInstance(instanceId, newSetId, insertIndex, targetOrde
   if (oldSetId !== newSetId) {
     deleteInstanceRemote(state.gig.gigId, oldSetId, instanceId).catch(err => console.error('deleteInstance failed:', err));
   }
+  const songTitle = state.songs[instance.songId]?.title ?? 'a song';
+  if (oldSetId !== newSetId) {
+    const oldSetName = state.sets[oldSetId]?.name ?? 'a set';
+    log('move-song', `Moved "${songTitle}" from "${oldSetName}" to "${targetSet.name}"`);
+  } else {
+    log('reorder-song', `Reordered "${songTitle}" within "${targetSet.name}"`);
+  }
 }
 
 // Adds a previously-unlinked instance into an existing link's membership,
@@ -436,6 +491,8 @@ export function addOrphanToChain(instanceId, linkId, chainInsertIndex) {
 
   saveLinkRemote(state.gig.gigId, link).catch(err => console.error('saveLink failed:', err));
   saveInstanceRemote(state.gig.gigId, instance).catch(err => console.error('saveInstance failed:', err));
+  const songTitle = state.songs[instance.songId]?.title ?? 'a song';
+  log('join-chain', `Added "${songTitle}" into an existing medley`);
 }
 
 // Removes one instance from its link's membership without touching its
@@ -459,6 +516,8 @@ export function extractFromChain(instanceId) {
 
   notify();
   saveInstanceRemote(state.gig.gigId, instance).catch(err => console.error('saveInstance failed:', err));
+  const songTitle = state.songs[instance.songId]?.title ?? 'a song';
+  log('extract-from-chain', `Removed "${songTitle}" from its medley`);
 }
 
 // Updates a link's own internal member order (used after a within-chain
@@ -469,6 +528,7 @@ export function syncChainMemberOrder(linkId, newMemberOrder) {
   link.memberInstanceIds = newMemberOrder;
   notify();
   saveLinkRemote(state.gig.gigId, link).catch(err => console.error('saveLink failed:', err));
+  log('reorder-chain', 'Reordered songs within a medley');
 }
 
 // §4.1: a new set starts empty; §5.3 says a set only picked up alpha
@@ -490,6 +550,7 @@ export function addSet(name) {
   notify();
   saveSetRemote(state.gig.gigId, set).catch(err => console.error('saveSet failed:', err));
   saveGigMeta(state.gig).catch(err => console.error('saveGigMeta failed:', err));
+  log('add-set', `Added set "${set.name}"`);
 }
 
 // "Add Song" from the Add+ menu: appends instances of zero or more
@@ -559,6 +620,8 @@ export function addSongsToSet({ existingSongIds = [], newSongFields = null }, se
   for (const instance of newInstances) {
     saveInstanceRemote(state.gig.gigId, instance).catch(err => console.error('saveInstance failed:', err));
   }
+  const titles = newInstances.map(i => state.songs[i.songId]?.title ?? 'a song');
+  log('add-songs', `Added ${titles.length} song${titles.length === 1 ? '' : 's'} to "${set.name}": ${titles.join(', ')}`);
 }
 
 // §9/§13.6 "Save as copy": deep-clone the current gig under a NEW gigId,
@@ -608,6 +671,7 @@ export async function saveGigAsCopy(name, description = '') {
 
   const bundle = { gig: newGig, sets: newSets, instances: newInstances, links: newLinks, songs: state.songs };
   await saveGigBundle(bundle);
+  log('save-gig-copy', `Saved a copy of "${state.gig.name}" as "${newGig.name}"`);
   return newGig;
 }
 
@@ -616,11 +680,13 @@ export async function saveGigAsCopy(name, description = '') {
 // module firing its own Firestore write as it happens).
 export async function overwriteCurrentGig(name, description = '') {
   if (!state.gig) return;
+  const oldName = state.gig.name;
   state.gig.name = name;
   state.gig.description = description;
   state.gig.updatedAt = new Date().toISOString();
   notify();
   await saveGigMeta(state.gig);
+  log('overwrite-gig', `Saved gig "${oldName}" as "${name}"`);
 }
 
 export function getSongsForSet(setId) {
@@ -644,6 +710,7 @@ export function reorderSets(orderedSetIds) {
     saveSetRemote(state.gig.gigId, set).catch(err => console.error('saveSet failed:', err));
   });
   notify();
+  log('reorder-sets', `Reordered sets in "${state.gig.name}"`);
 }
 
 function persistLocal() {
