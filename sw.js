@@ -1,4 +1,4 @@
-const CACHE = 'gig-setlists-v2';
+const CACHE = 'gig-setlists-v3';
 const SHELL = [
   '/gig-setlists/',
   '/gig-setlists/index.html',

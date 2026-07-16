@@ -47,8 +47,21 @@ export function makeSong({ title, key = null, bpm = null, lead = null, notes = n
   };
 }
 
-export function makeSongInstance({ songId, setId, order, linkId = null }) {
-  return { instanceId: newInstanceId(), songId, setId, order, linkId };
+// key/bpm/lead/notes are per-INSTANCE (per placement in a gig) — different
+// gigs can call for a different singer, key, or tempo for the same song.
+// Lyrics stays on the Song record (see makeSong) since the words don't
+// change gig to gig. `key`/`bpm`/`lead`/`notes` default to null (blank);
+// callers that want to pre-fill from the song's most recent use pass
+// those values in explicitly.
+export function makeSongInstance({ songId, setId, order, linkId = null, key = null, bpm = null, lead = null, notes = null }) {
+  return {
+    instanceId: newInstanceId(),
+    songId, setId, order, linkId,
+    key: key || null,
+    bpm: bpm == null || bpm === '' ? null : Number(bpm),
+    lead: lead || null,
+    notes: notes || null,
+  };
 }
 
 // attributeDisplay controls what secondary text shows on each song row in

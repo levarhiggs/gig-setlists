@@ -605,6 +605,95 @@ body.modal-open {
   min-height: 44px;
 }
 
+/* ── lyrics field: header row, font controls, maximize/restore ─────── */
+
+.field-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.lyrics-controls {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.lyrics-font-btn,
+.lyrics-maximize-btn {
+  background: #20242f;
+  border: 1px solid #363c4d;
+  border-radius: 6px;
+  color: #f2f2f2;
+  font-size: 0.8rem;
+  font-weight: 600;
+  min-width: 36px;
+  min-height: 32px;
+  padding: 0 8px;
+}
+
+.lyrics-maximize-btn {
+  font-size: 0.95rem;
+}
+
+#attr-lyrics {
+  transition: font-size 0.1s;
+}
+
+.lyrics-maximized-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: #0f1117;
+  display: flex;
+  flex-direction: column;
+  padding: env(safe-area-inset-top, 12px) 12px 12px;
+}
+
+.lyrics-maximized-overlay.hidden {
+  display: none;
+}
+
+.lyrics-maximized-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 12px;
+  flex-shrink: 0;
+}
+
+.lyrics-restore-btn {
+  background: #262a36;
+  border: 1px solid #363c4d;
+  border-radius: 8px;
+  color: #f2f2f2;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 10px 14px;
+  min-height: 44px;
+}
+
+#attr-lyrics-maximized {
+  flex: 1;
+  width: 100%;
+  background: #14161d;
+  border: 1px solid #262a36;
+  border-radius: 10px;
+  color: #f2f2f2;
+  padding: 14px;
+  resize: none;
+  font-family: inherit;
+  line-height: 1.6;
+  transition: font-size 0.1s;
+}
+
+#attr-lyrics-maximized:focus {
+  outline: none;
+  border-color: #4c6ef5;
+}
+
 .btn-danger {
   background: #3a1418;
   color: #ff8a8a;

@@ -55,19 +55,29 @@ export function upsertSong(song) {
   notify();
 }
 
-// §5.5: attribute edits write to the underlying Song record, so they
-// reflect on every instance of that song across the gig.
-export function updateSongAttributes(songId, { key, bpm, lead, notes, lyrics }) {
+// Lyrics stay global on the Song record (the words don't change gig to
+// gig) — this is the only attribute-modal field still written here.
+export function updateSongLyrics(songId, lyrics) {
   const song = state.songs[songId];
   if (!song) return;
-  song.key = key ?? null;
-  song.bpm = bpm === '' || bpm == null ? null : Number(bpm);
-  song.lead = lead ?? null;
-  song.notes = notes ?? null;
-  if (lyrics !== undefined) song.lyrics = lyrics || null;
+  song.lyrics = lyrics || null;
   song.updatedAt = new Date().toISOString();
   notify();
   saveSongRemote(song).catch(err => console.error('saveSong failed:', err));
+}
+
+// key/bpm/lead/notes are per-INSTANCE: the same song can call for a
+// different singer/key/tempo in different gigs (or different sets of the
+// same gig), so these write to the SongInstance, not the shared Song.
+export function updateInstanceAttributes(instanceId, { key, bpm, lead, notes }) {
+  const instance = state.instances[instanceId];
+  if (!instance) return;
+  instance.key = key || null;
+  instance.bpm = bpm === '' || bpm == null ? null : Number(bpm);
+  instance.lead = lead || null;
+  instance.notes = notes || null;
+  notify();
+  saveInstanceRemote(state.gig.gigId, instance).catch(err => console.error('saveInstance failed:', err));
 }
 
 // Uploads an MP3 File to Storage and records its URL on the Song. Used by
@@ -304,6 +314,7 @@ export async function copySetToGig(setId, targetGigId) {
       songId: inst.songId,
       setId: newSet.setId,
       order: (i + 1) * ORDER_STEP,
+      key: inst.key, bpm: inst.bpm, lead: inst.lead, notes: inst.notes,
     });
     newInstances[newInst.instanceId] = newInst;
   });
@@ -486,6 +497,25 @@ export function addSet(name) {
 // song (created here, upserted by normalized title like the importer
 // does) — all to the end of the chosen set, in one batch. Existing songs
 // are appended first (in the order given), then the new song last.
+// Finds this song's most recently-touched instance among everything
+// currently loaded (the active gig) — used to pre-fill a new placement's
+// key/bpm/lead/notes as a convenience starting point (§ Add Song). Falls
+// back to the Song record's own template values if this song has never
+// been placed anywhere yet.
+function mostRecentInstanceValuesFor(songId) {
+  const candidates = Object.values(state.instances).filter(i => i.songId === songId);
+  if (!candidates.length) {
+    const song = state.songs[songId];
+    return { key: song?.key ?? null, bpm: song?.bpm ?? null, lead: song?.lead ?? null, notes: song?.notes ?? null };
+  }
+  // No per-instance timestamp is tracked, so "most recent" falls back to
+  // insertion order among currently-loaded instances — the last one
+  // created is last in object key iteration order, which is stable for
+  // this purpose since instanceIds are time-ordered strings.
+  const latest = candidates[candidates.length - 1];
+  return { key: latest.key, bpm: latest.bpm, lead: latest.lead, notes: latest.notes };
+}
+
 export function addSongsToSet({ existingSongIds = [], newSongFields = null }, setId) {
   if (!state.gig) return;
   const set = state.sets[setId];
@@ -499,21 +529,26 @@ export function addSongsToSet({ existingSongIds = [], newSongFields = null }, se
   for (const songId of existingSongIds) {
     if (!state.songs[songId]) continue;
     nextOrder += ORDER_STEP;
-    const instance = makeSongInstance({ songId, setId, order: nextOrder });
+    const prefill = mostRecentInstanceValuesFor(songId);
+    const instance = makeSongInstance({ songId, setId, order: nextOrder, ...prefill });
     state.instances[instance.instanceId] = instance;
     newInstances.push(instance);
   }
 
   if (newSongFields) {
-    const { lyrics, ...songFields } = newSongFields;
-    const song = makeSong(songFields);
+    const { lyrics, key, bpm, lead, notes, ...songFields } = newSongFields;
+    // makeSong still gets a copy of these as the song's initial "template"
+    // (used by mostRecentInstanceValuesFor when this song has no
+    // instances anywhere yet), but the values the user just typed belong
+    // on THIS placement, not shared globally.
+    const song = makeSong({ ...songFields, key, bpm, lead, notes });
     if (lyrics) song.lyrics = lyrics;
     if (!state.songs[song.songId]) {
       state.songs[song.songId] = song;
       saveSongRemote(song).catch(err => console.error('saveSong failed:', err));
     }
     nextOrder += ORDER_STEP;
-    const instance = makeSongInstance({ songId: song.songId, setId, order: nextOrder });
+    const instance = makeSongInstance({ songId: song.songId, setId, order: nextOrder, key, bpm, lead, notes });
     state.instances[instance.instanceId] = instance;
     newInstances.push(instance);
   }

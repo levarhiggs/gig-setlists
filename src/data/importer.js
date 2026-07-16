@@ -69,15 +69,19 @@ export function importGigFromRows(rows, gigName, gigId = null) {
       const lead = cleanText(row.LEAD);
       const bpm = cleanNumber(row.BPM);
 
+      // key/bpm/lead/notes are per-instance (this placement, in this
+      // gig) — pass the row's values straight onto the instance. The
+      // Song record still gets a copy of the FIRST row's values as a
+      // starting "template" for future placements of this song to
+      // pre-fill from, but is never treated as canonical.
       const song = makeSong({ title, key, bpm, lead, notes });
-      // Upsert: later rows with the same title reuse the same songId but
-      // don't clobber attributes already captured from an earlier row.
       if (!songs[song.songId]) songs[song.songId] = song;
 
       const instance = makeSongInstance({
         songId: song.songId,
         setId: set.setId,
         order: (i + 1) * ORDER_STEP,
+        key, bpm, lead, notes,
       });
       instances[instance.instanceId] = instance;
     });

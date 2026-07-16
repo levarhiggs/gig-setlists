@@ -180,9 +180,9 @@ function renderSongRow(instance, state, seq, linkMode, setId, setLocked, attribu
 
   let meta = '';
   if (attributeDisplay === 'lead') {
-    meta = song.lead || '';
+    meta = instance.lead || '';
   } else if (attributeDisplay !== 'none') {
-    meta = [song.key, song.bpm ? `${song.bpm} bpm` : null].filter(Boolean).join(' · ');
+    meta = [instance.key, instance.bpm ? `${instance.bpm} bpm` : null].filter(Boolean).join(' · ');
   }
 
   const checkbox = linkMode
