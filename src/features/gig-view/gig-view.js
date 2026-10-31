@@ -21,6 +21,19 @@ let gigViewContainerEl = null;
 const collapsedSetIds = new Set(); // session-only UI state, not persisted
 const hideStrikethroughSetIds = new Set(); // session-only UI state, not persisted
 
+// Whether the per-set "hide completed/skipped" toggle is currently on —
+// Export mirrors this so a printout matches what's on screen.
+export function isStruckHiddenInSet(setId) {
+  return hideStrikethroughSetIds.has(setId);
+}
+
+// The secondary text shown on a song row, per the set's Attribute Display.
+export function rowMetaText(instance, attributeDisplay) {
+  if (attributeDisplay === 'lead') return instance.lead || '';
+  if (attributeDisplay === 'none') return '';
+  return [instance.key, instance.bpm ? `${instance.bpm} bpm` : null].filter(Boolean).join(' · ');
+}
+
 export function renderGigView(container) {
   const state = getState();
   if (!state.gig) {
@@ -180,12 +193,7 @@ function renderSongRow(instance, state, seq, linkMode, setId, setLocked, attribu
 
   const statusIcon = instance.completed === 'done' ? '✅' : instance.completed === 'cut' ? '❌' : '';
 
-  let meta = '';
-  if (attributeDisplay === 'lead') {
-    meta = instance.lead || '';
-  } else if (attributeDisplay !== 'none') {
-    meta = [instance.key, instance.bpm ? `${instance.bpm} bpm` : null].filter(Boolean).join(' · ');
-  }
+  const meta = rowMetaText(instance, attributeDisplay);
 
   const checkbox = linkMode
     ? `<input type="checkbox" class="link-checkbox" ${setLocked ? 'disabled' : ''} ${isSelected(instance.instanceId) ? 'checked' : ''}>`

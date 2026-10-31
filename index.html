@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="favicon.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=20260716a">
+<link rel="stylesheet" href="style.css?v=20261031a">
 </head>
 <body>
 <header class="top-bar">
@@ -28,6 +28,15 @@
       </div>
     </div>
     <input type="file" id="import-file" accept=".xlsx" hidden>
+    <div class="add-menu-wrap">
+      <button id="export-btn" class="btn-icon" aria-label="Export setlist" title="Export / Print"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3.5h10V9"/><rect x="3.5" y="9" width="17" height="8" rx="2"/><path d="M7 14h10v6.5H7z" fill="#171a23"/></svg></button>
+      <div id="export-menu" class="dropdown-menu hidden">
+        <button class="dropdown-item" data-action="print">Print…</button>
+        <button class="dropdown-item" data-action="image">Save as Image (PNG)</button>
+        <button class="dropdown-item" data-action="text">Save as Text File</button>
+        <button class="dropdown-item" data-action="copy">Copy Text</button>
+      </div>
+    </div>
     <button id="save-btn" class="btn-secondary">Save</button>
   </div>
 </header>

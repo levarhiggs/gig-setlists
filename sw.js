@@ -1,4 +1,4 @@
-const CACHE = 'gig-setlists-v4';
+const CACHE = 'gig-setlists-v5';
 const SHELL = [
   '/gig-setlists/',
   '/gig-setlists/index.html',
@@ -7,7 +7,6 @@ const SHELL = [
   '/gig-setlists/icon-192.png',
   '/gig-setlists/icon-512.png',
   '/gig-setlists/favicon.png',
-  '/gig-setlists/src/main.js',
   '/gig-setlists/src/config.js',
   '/gig-setlists/src/data/importer.js',
   '/gig-setlists/src/data/models.js',
@@ -16,7 +15,9 @@ const SHELL = [
   '/gig-setlists/src/features/activity/activity-view.js',
   '/gig-setlists/src/features/add-song/add-song-modal.js',
   '/gig-setlists/src/features/attribute-modal/attribute-modal.js',
+  '/gig-setlists/src/features/bulk-audio/bulk-audio-upload.js',
   '/gig-setlists/src/features/bulk-audio/bulk-local-attach.js',
+  '/gig-setlists/src/features/export/export-gig.js',
   '/gig-setlists/src/features/gig-view/gig-view.js',
   '/gig-setlists/src/features/identity/identity.js',
   '/gig-setlists/src/features/identity/name-prompt.js',
@@ -45,6 +46,7 @@ const SHELL = [
   '/gig-setlists/src/lib/set-drag.js',
   '/gig-setlists/src/lib/set-header-gestures.js',
   '/gig-setlists/src/lib/xlsx.js',
+  '/gig-setlists/src/main.js',
   '/gig-setlists/src/ui/add-menu.js',
   '/gig-setlists/src/ui/editable-text.js',
 ];

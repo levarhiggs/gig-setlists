@@ -721,12 +721,16 @@ function persistLocal() {
   }
 }
 
+// Offline/failed-load fallback: restores the last gig this device saw.
+// Returns true only if a usable gig came back.
 export function loadLocalCache() {
   try {
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) return false;
     const cached = JSON.parse(raw);
+    if (!cached?.gig?.gigId || !cached.sets || !cached.instances) return false;
     Object.assign(state, cached);
+    notify();
     return true;
   } catch {
     return false;

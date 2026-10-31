@@ -2,9 +2,10 @@
 
 import { fileToRows } from './lib/xlsx.js';
 import { importGigFromRows } from './data/importer.js';
-import { loadGig, subscribe, getState } from './data/store.js';
+import { loadGig, loadLocalCache, subscribe, getState } from './data/store.js';
 import { renderGigView } from './features/gig-view/gig-view.js';
-import { loadGigBundle, saveGigBundle } from './firebase/sync.js';
+import { loadGigBundle, saveGigBundle, listGigs } from './firebase/sync.js';
+import { initExportMenu } from './features/export/export-gig.js';
 import { initAddMenu } from './ui/add-menu.js';
 import { initLinking, isLinkModeOn, cancelLinkMode } from './features/linking/linking.js';
 import { openLinkPicker } from './features/linking/link-picker.js';
@@ -46,7 +47,17 @@ appTitleEl?.addEventListener('click', () => {
   titleTapTimer = setTimeout(() => { titleTapCount = 0; }, 2000);
 });
 
-subscribe(() => renderGigView(gigViewEl));
+// Reopen whichever gig was last on screen (per device) instead of always
+// jumping back to the seed gig.
+const LAST_GIG_KEY = 'setlist_last_gig_id';
+
+subscribe(() => {
+  renderGigView(gigViewEl);
+  const gigId = getState().gig?.gigId;
+  if (gigId) {
+    try { localStorage.setItem(LAST_GIG_KEY, gigId); } catch { /* storage full/blocked — non-fatal */ }
+  }
+});
 
 async function loadSeedGigFromFile(gigId = null) {
   const res = await fetch('./src/data/seed-july12.json');
@@ -54,24 +65,72 @@ async function loadSeedGigFromFile(gigId = null) {
   return importGigFromRows(rows, sheetName, gigId);
 }
 
+// A banner that sits above the gig view (renderGigView replaces the gig
+// view's own contents, so it can't live in there).
+function showConnectionBanner(message) {
+  let banner = document.getElementById('connection-banner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'connection-banner';
+    banner.className = 'connection-banner';
+    banner.innerHTML = '<span class="connection-banner-text"></span><button class="connection-banner-retry">Retry</button>';
+    banner.querySelector('button').addEventListener('click', () => bootstrap());
+    gigViewEl.before(banner);
+  }
+  banner.querySelector('.connection-banner-text').textContent = message;
+}
+
+function hideConnectionBanner() {
+  document.getElementById('connection-banner')?.remove();
+}
+
+// Safe-failure path: when Firestore can't be read we show the copy cached on
+// this device (or an error) and NEVER write anything. Treating a failed read
+// as "no data" and re-seeding is what overwrote the real reunion gig on
+// 2026-07-22.
+function showLoadFailure() {
+  if (loadLocalCache()) {
+    showConnectionBanner("Couldn't reach the cloud — showing the copy saved on this device. Changes may not sync until you're back online.");
+  } else {
+    gigViewEl.innerHTML = '<p class="empty-hint">Couldn\'t load your gigs, and there\'s no saved copy on this device yet.</p>';
+    showConnectionBanner("Couldn't reach the cloud.");
+  }
+}
+
 async function bootstrap() {
+  let preferredId = SEED_GIG_ID;
+  try { preferredId = localStorage.getItem(LAST_GIG_KEY) || SEED_GIG_ID; } catch { /* blocked storage */ }
+
+  let bundle = null;
   try {
-    const existing = await loadGigBundle(SEED_GIG_ID);
-    if (existing) {
-      loadGig(existing);
-      console.log('Loaded gig from Firestore:', existing.gig);
-      return;
+    bundle = await loadGigBundle(preferredId);
+    if (!bundle && preferredId !== SEED_GIG_ID) bundle = await loadGigBundle(SEED_GIG_ID);
+    if (!bundle) {
+      // That gig is gone, but others may exist — open the most recently
+      // saved one rather than ever overwriting anything.
+      const gigs = await listGigs();
+      if (gigs[0]?.gigId) bundle = await loadGigBundle(gigs[0].gigId);
     }
   } catch (err) {
-    console.error('Firestore load failed, falling back to local seed:', err);
+    console.error('Firestore load failed — not touching the database:', err);
+    showLoadFailure();
+    return;
   }
 
+  hideConnectionBanner();
+
+  if (bundle) {
+    loadGig(bundle);
+    console.log('Loaded gig from Firestore:', bundle.gig);
+    return;
+  }
+
+  // Reads succeeded and the database has no gigs at all: genuine first run.
   const data = await loadSeedGigFromFile(SEED_GIG_ID);
   loadGig(data);
-
   try {
     await saveGigBundle(data);
-    console.log('Seeded Firestore with imported gig.');
+    console.log('First run: seeded Firestore with the starter gig.');
   } catch (err) {
     console.error('Failed to seed Firestore (working from local state only):', err);
   }
@@ -115,6 +174,8 @@ saveBtn.addEventListener('click', () => {
     },
   });
 });
+
+initExportMenu();
 
 initLinking({
   onChange: () => {
