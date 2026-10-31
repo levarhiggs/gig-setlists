@@ -21,9 +21,14 @@ export function newLinkId() {
   return `lnk_${Date.now().toString(36)}${linkCounter.toString(36)}`;
 }
 
+// Always unique: saveGigBundle REPLACES whatever already lives under a gig
+// id, so an id derived from the name alone let a new gig (new, imported, or
+// saved-as-copy) silently overwrite an existing gig with the same name.
+// Existing gigs keep the ids they already have.
 export function newGigId(name) {
-  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
-  return `gig_${slug || Date.now().toString(36)}`;
+  const slug = (name || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40);
+  const unique = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+  return `gig_${slug ? slug + '_' : ''}${unique}`;
 }
 
 export function newSetId(gigId, order) {

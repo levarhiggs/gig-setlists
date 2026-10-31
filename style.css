@@ -587,6 +587,7 @@ body.modal-open {
 }
 
 .field input,
+.field select,
 .field textarea {
   background: #20242f;
   border: 1px solid #363c4d;
@@ -599,6 +600,7 @@ body.modal-open {
 }
 
 .field input:focus,
+.field select:focus,
 .field textarea:focus {
   outline: none;
   border-color: #4c6ef5;
@@ -1289,6 +1291,20 @@ body.modal-open {
 
 #print-root { display: none; }
 
+/* Used by export-gig.js to measure the print layout off-screen (at roughly
+   the printable width of a portrait page) so it can be shrunk to fit one
+   page. All print sizes are em-based off the font-size JS sets on the root. */
+#print-root.print-measuring {
+  display: block;
+  position: absolute;
+  left: -10000px;
+  top: 0;
+  width: 7.4in;
+  visibility: hidden;
+}
+
+@page { margin: 0.4in; }
+
 @media print {
   html { color-scheme: light; }
   html, body { background: #fff !important; color: #000 !important; }
@@ -1301,33 +1317,34 @@ body.modal-open {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
-  #print-root h1 { font-size: 24pt; margin: 0 0 4pt; }
-  #print-root .print-desc { margin: 0 0 6pt; color: #444; font-size: 11pt; }
-  #print-root .print-set { margin-top: 16pt; }
+  #print-root h1 { font-size: 1.7em; margin: 0 0 0.15em; line-height: 1.15; }
+  #print-root .print-desc { margin: 0 0 0.3em; color: #444; font-size: 0.85em; }
+  #print-root .print-set { margin-top: 0.9em; }
   #print-root h2 {
-    font-size: 14pt;
+    font-size: 1.05em;
     text-transform: uppercase;
-    margin: 0 0 4pt;
-    padding-bottom: 3pt;
-    border-bottom: 2pt solid #000;
+    margin: 0 0 0.2em;
+    padding-bottom: 0.15em;
+    border-bottom: 0.12em solid #000;
     break-after: avoid;
   }
   #print-root .print-row {
     display: flex;
     align-items: center;
-    gap: 8pt;
-    padding: 4pt 0;
-    font-size: 13pt;
+    gap: 0.6em;
+    padding: 0.22em 0;
+    font-size: 1em;
+    line-height: 1.2;
     break-inside: avoid;
   }
-  #print-root .print-seq { width: 22pt; text-align: right; color: #777; font-size: 11pt; flex-shrink: 0; }
-  #print-root .print-dot { width: 9pt; height: 9pt; border-radius: 50%; flex-shrink: 0; }
-  #print-root .print-icon { font-size: 11pt; flex-shrink: 0; }
+  #print-root .print-seq { width: 1.7em; text-align: right; color: #777; font-size: 0.85em; flex-shrink: 0; }
+  #print-root .print-dot { width: 0.7em; height: 0.7em; border-radius: 50%; flex-shrink: 0; }
+  #print-root .print-icon { font-size: 0.85em; flex-shrink: 0; }
   #print-root .print-title { flex: 1; }
-  #print-root .print-meta { color: #555; font-size: 11pt; flex-shrink: 0; }
+  #print-root .print-meta { color: #555; font-size: 0.85em; flex-shrink: 0; }
   #print-root .print-done .print-title,
   #print-root .print-cut .print-title { text-decoration: line-through; }
   #print-root .print-done .print-title { color: #8a8f9c; }
   #print-root .print-cut .print-title { color: #b5484e; }
-  #print-root .print-empty { color: #888; font-style: italic; }
+  #print-root .print-empty { color: #888; font-style: italic; margin: 0.2em 0; }
 }

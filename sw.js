@@ -1,4 +1,4 @@
-const CACHE = 'gig-setlists-v5';
+const CACHE = 'gig-setlists-v6';
 const SHELL = [
   '/gig-setlists/',
   '/gig-setlists/index.html',
@@ -23,6 +23,7 @@ const SHELL = [
   '/gig-setlists/src/features/identity/name-prompt.js',
   '/gig-setlists/src/features/linking/link-picker.js',
   '/gig-setlists/src/features/linking/linking.js',
+  '/gig-setlists/src/features/new-gig/new-gig-modal.js',
   '/gig-setlists/src/features/player/attach-audio-modal.js',
   '/gig-setlists/src/features/player/audio-source.js',
   '/gig-setlists/src/features/player/auto-attach.js',

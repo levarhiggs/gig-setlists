@@ -675,6 +675,32 @@ export async function saveGigAsCopy(name, description = '') {
   return newGig;
 }
 
+// Add+ → New Gig: a brand-new gig with `setCount` empty sets, under a fresh
+// unique id (so it can never touch an existing gig). Saved to Firestore
+// BEFORE it becomes the active gig — if the save fails the caller gets the
+// error and nothing on screen changes. The song library carries over (songs
+// are shared across gigs), so Add Song works immediately.
+export async function createNewGig({ name, description = '', setCount = 2 }) {
+  const gig = makeGig({ name, description });
+  const sets = {};
+  for (let i = 0; i < setCount; i++) {
+    const set = makeSet({ gigId: gig.gigId, name: `Set ${i + 1}`, order: i, songOrderMode: 'alpha' });
+    sets[set.setId] = set;
+    gig.sets.push(set.setId);
+  }
+
+  const bundle = { gig, sets, instances: {}, links: {}, songs: {} };
+  // Offline, the Firestore SDK can leave a write pending indefinitely —
+  // give up after a bit so the dialog can say so instead of spinning.
+  await Promise.race([
+    saveGigBundle(bundle),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Timed out saving the new gig')), 15000)),
+  ]);
+  loadGig(bundle);
+  log('new-gig', `Created new gig "${name}" with ${setCount} set${setCount === 1 ? '' : 's'}`);
+  return gig;
+}
+
 // §9 "Overwrite": update the current gig's own name/description in place
 // (its subtree is already kept current by every other mutation in this
 // module firing its own Firestore write as it happens).

@@ -1,9 +1,8 @@
-// add-menu.js — the "Add+" dropdown: New Gig, Add Set, Add Song, Bulk Import.
-// Only "Bulk Import" and "Add Set" are wired to real behavior so far;
-// "New Gig" and "Add Song" are stubbed with a friendly not-yet-built message
-// until their milestones land.
+// add-menu.js — the "Add+" dropdown: New Gig, Add Set, Add Song, Bulk Import,
+// Attach Audio, Open Saved Gig.
 
 import { addSet } from '../data/store.js';
+import { openNewGigModal } from '../features/new-gig/new-gig-modal.js';
 import { openAddSongModal } from '../features/add-song/add-song-modal.js';
 import { openBulkLocalAttachModal } from '../features/bulk-audio/bulk-local-attach.js';
 
@@ -35,7 +34,7 @@ export function initAddMenu({ onBulkImport, onOpenSaved }) {
       closeMenu();
       const action = item.dataset.action;
       if (action === 'new-gig') {
-        alert('New Gig — coming soon.');
+        openNewGigModal();
       } else if (action === 'add-set') {
         addSet();
       } else if (action === 'add-song') {

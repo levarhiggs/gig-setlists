@@ -279,10 +279,33 @@ function modelToPrintDom(model) {
   return root;
 }
 
+// Printing shrinks the whole gig to fit ONE page when it reasonably can:
+// measure the layout at the printable width of a portrait page, and scale
+// the root font size down until it fits. Never enlarges past the base size,
+// and stops at a minimum so it stays legible — a gig too long for that just
+// flows onto a second page instead.
+const PRINT_BASE_PX = 17;      // ≈ 13pt, comfortable when there's room
+const PRINT_MIN_SCALE = 0.55;  // ≈ 7pt floor
+const PRINT_PAGE_HEIGHT_PX = (11 - 0.8) * 96 * 0.95; // Letter minus margins, 5% safety
+
+function fitRootToOnePage(root) {
+  root.classList.add('print-measuring');
+  let scale = 1;
+  for (let i = 0; i < 5; i++) {
+    root.style.fontSize = `${(PRINT_BASE_PX * scale).toFixed(2)}px`;
+    const height = root.offsetHeight;
+    if (height <= PRINT_PAGE_HEIGHT_PX || scale <= PRINT_MIN_SCALE) break;
+    scale = Math.max(PRINT_MIN_SCALE, scale * (PRINT_PAGE_HEIGHT_PX / height) * 0.99);
+  }
+  root.classList.remove('print-measuring');
+  return scale;
+}
+
 function printModel(model) {
   document.getElementById('print-root')?.remove();
   const root = modelToPrintDom(model);
   document.body.appendChild(root);
+  fitRootToOnePage(root);
   document.body.classList.add('printing-export');
 
   const cleanup = () => {
