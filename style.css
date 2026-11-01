@@ -654,6 +654,93 @@ body.modal-open {
   margin-left: 6px;
 }
 
+/* Merge Duplicate Songs */
+.merge-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid #262a36;
+  border-left: 3px solid #4c6ef5;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #14161d;
+  margin-bottom: 8px;
+}
+
+.merge-group-names {
+  min-width: 0;
+  font-size: 0.95rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-wrap: anywhere;
+}
+
+.merge-group .btn-link-open {
+  flex: none;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+}
+
+.merge-meta {
+  display: block;
+  font-size: 0.75rem;
+  color: #8a8f9c;
+  margin-top: 2px;
+}
+
+.merge-item .stored-song-title,
+.merge-keep .stored-song-title {
+  white-space: normal;
+}
+
+.merge-keep-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.merge-keep {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #262a36;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #14161d;
+  cursor: pointer;
+}
+
+.merge-keep input {
+  accent-color: #4c6ef5;
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+
+.merge-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #b9bdc8;
+  line-height: 1.4;
+}
+
+.merge-footer-row {
+  display: flex;
+  gap: 10px;
+}
+
+.merge-footer-row .btn-link-open {
+  flex: 1;
+}
+
+.merge-go {
+  background: #4c6ef5;
+  border-color: #4c6ef5;
+}
+
 /* Settings */
 .settings-row {
   display: flex;
@@ -1583,3 +1670,4 @@ body.modal-open {
   #print-root .print-cut .print-title { color: #b5484e; }
   #print-root .print-empty { color: #888; font-style: italic; margin: 0.2em 0; }
 }
+.add-song-footer:empty { display: none; }

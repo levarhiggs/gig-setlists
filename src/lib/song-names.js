@@ -31,6 +31,51 @@ export function findMatchingSong(songs, title, artist) {
   return null;
 }
 
+// The Title/Artist a song is effectively known by, for comparison only: its
+// own fields when it has an artist, otherwise a guess from the old combined
+// name ("Stevie Wonder - Superstition" → Superstition / Stevie Wonder).
+export function effectiveNames(song) {
+  if (song.artist) return { title: song.title, artist: song.artist };
+  const g = guessSplit(song.title);
+  return { title: g.title, artist: g.artist };
+}
+
+// Suggests songs that look like the same song: same title (ignoring case and
+// punctuation) and the same artist, or an artist missing on one side. Two
+// different named artists never group together ("Hello" by Adele vs Lionel
+// Richie), and a song with no artist is only added when exactly one artist
+// is named for that title, otherwise it's ambiguous and left out.
+// Returns arrays of 2+ songs, sorted by title.
+export function findDuplicateGroups(songs) {
+  const byTitle = new Map();
+  for (const song of Object.values(songs)) {
+    const { title, artist } = effectiveNames(song);
+    const tk = nameKey(title);
+    if (!tk) continue;
+    if (!byTitle.has(tk)) byTitle.set(tk, []);
+    byTitle.get(tk).push({ song, ak: nameKey(artist) });
+  }
+  const groups = [];
+  for (const members of byTitle.values()) {
+    if (members.length < 2) continue;
+    const byArtist = new Map();
+    const blank = [];
+    for (const m of members) {
+      if (!m.ak) { blank.push(m); continue; }
+      if (!byArtist.has(m.ak)) byArtist.set(m.ak, []);
+      byArtist.get(m.ak).push(m);
+    }
+    const named = [...byArtist.values()];
+    if (named.length === 0) groups.push(blank);
+    else if (named.length === 1) groups.push([...named[0], ...blank]);
+    else for (const g of named) groups.push(g); // blank ones are ambiguous: leave out
+  }
+  return groups
+    .filter(g => g.length >= 2)
+    .map(g => g.map(m => m.song).sort((a, b) => a.title.localeCompare(b.title)))
+    .sort((a, b) => effectiveNames(a[0]).title.localeCompare(effectiveNames(b[0]).title));
+}
+
 // Best-effort split of an old combined name into { title, artist, guessed }.
 //   "Al Green - Let's Stay Together"  → artist first (the common pattern)
 //   "Rock steady (The Whispers)"      → trailing parentheses are the artist

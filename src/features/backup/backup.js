@@ -17,6 +17,7 @@ function today() {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
+// Resolves to true when the file was saved, false if the backup failed.
 export async function saveBackup() {
   toast('Preparing backup…', 15000);
   try {
@@ -28,9 +29,11 @@ export async function saveBackup() {
     downloadBlob(new Blob([json], { type: 'application/json' }), `GigSetlists-backup-${today()}.json`);
     const songCount = Object.keys(backup.songs).length;
     toast(`Backup saved — ${backup.gigs.length} gig${backup.gigs.length === 1 ? '' : 's'}, ${songCount} songs`, 4000);
+    return true;
   } catch (err) {
     console.error('Backup failed:', err);
     toast("Couldn't create the backup — check your connection and try again.", 5000);
+    return false;
   }
 }
 

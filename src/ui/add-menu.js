@@ -6,6 +6,7 @@ import { openNewGigModal } from '../features/new-gig/new-gig-modal.js';
 import { saveBackup, chooseBackupFileToRestore } from '../features/backup/backup.js';
 import { openTidySongNames } from '../features/song-names/tidy-song-names.js';
 import { openSettings } from '../features/settings/settings-modal.js';
+import { openMergeSongs } from '../features/merge-songs/merge-songs.js';
 import { openImportHelp } from '../features/import-help/import-help.js';
 import { openAddSongModal } from '../features/add-song/add-song-modal.js';
 import { openBulkLocalAttachModal } from '../features/bulk-audio/bulk-local-attach.js';
@@ -49,6 +50,8 @@ export function initAddMenu({ onBulkImport, onOpenSaved }) {
         onOpenSaved?.();
       } else if (action === 'tidy-song-names') {
         openTidySongNames();
+      } else if (action === 'merge-songs') {
+        openMergeSongs();
       } else if (action === 'attach-audio') {
         openBulkLocalAttachModal();
       } else if (action === 'save-backup') {

@@ -9,6 +9,7 @@ import {
   saveLink as saveLinkRemote, deleteLink as deleteLinkRemote,
   deleteSet as deleteSetRemote, loadGigBundle as loadGigBundleRemote,
   saveGigBundle, getAllSongs as getAllSongsRemote,
+  deleteSong as deleteSongRemote, listAllInstances as listAllInstancesRemote,
 } from '../firebase/sync.js';
 import { reindex } from '../lib/ordering.js';
 import { findMatchingSong } from '../lib/song-names.js';
@@ -147,6 +148,62 @@ export async function applySongNameFixes(fixes) {
   const failed = results.filter(r => r.status === 'rejected').length;
   log('tidy-song-names', `Split Title/Artist on ${changed.length} song${changed.length === 1 ? '' : 's'}`);
   return failed;
+}
+
+// How many placements / gigs use each song, across ALL gigs:
+// { songId: { placements, gigs } }. Throws if any gig can't be read.
+export async function getSongUsage() {
+  const usage = {};
+  const gigsBySong = {};
+  for (const { gigId, instance } of await listAllInstancesRemote()) {
+    const u = usage[instance.songId] ||= { placements: 0, gigs: 0 };
+    u.placements++;
+    (gigsBySong[instance.songId] ||= new Set()).add(gigId);
+    u.gigs = gigsBySong[instance.songId].size;
+  }
+  return usage;
+}
+
+// Merges duplicate songs into one: every placement in every gig that uses a
+// song in `removeIds` is repointed to `keepId`, the kept song gets the best of
+// the lyrics/audio (its own first, otherwise the first duplicate that has
+// some), and only then are the duplicate song records deleted. Ordered so a
+// failure part-way leaves everything valid and the merge can simply be rerun:
+// nothing is deleted until every placement has been repointed. Attached audio
+// files are never deleted (the kept song just points at the same file).
+// Resolves to { moved, removed }.
+export async function mergeSongs({ keepId, removeIds, title, artist }) {
+  const keep = state.songs[keepId];
+  const dupes = [...new Set(removeIds)].filter(id => id !== keepId && state.songs[id]);
+  const finalTitle = (title || '').trim();
+  if (!keep || !dupes.length || !finalTitle) throw new Error('Nothing to merge');
+
+  // Read first, so a read failure aborts before anything is written.
+  const toMove = (await listAllInstancesRemote()).filter(({ instance }) => dupes.includes(instance.songId));
+
+  const pool = [keep, ...dupes.map(id => state.songs[id])];
+  const merged = { ...keep, title: finalTitle, artist: (artist || '').trim() || null, updatedAt: new Date().toISOString() };
+  const lyricsFrom = pool.find(s => s.lyrics);
+  if (lyricsFrom) merged.lyrics = lyricsFrom.lyrics;
+  const audioFrom = pool.find(s => s.audioUrl);
+  if (audioFrom) { merged.audioUrl = audioFrom.audioUrl; merged.audioFileName = audioFrom.audioFileName ?? null; }
+
+  await saveSongRemote(merged);
+  for (const { gigId, instance } of toMove) {
+    await saveInstanceRemote(gigId, { ...instance, songId: keepId });
+  }
+  for (const id of dupes) await deleteSongRemote(id);
+
+  // Local copy, only after the cloud side fully succeeded.
+  const names = dupes.map(id => state.songs[id].title);
+  state.songs[keepId] = merged;
+  for (const id of dupes) delete state.songs[id];
+  for (const inst of Object.values(state.instances)) {
+    if (dupes.includes(inst.songId)) inst.songId = keepId;
+  }
+  notify();
+  log('merge-songs', `Merged ${names.map(n => `"${n}"`).join(', ')} into "${finalTitle}" (${toMove.length} placement${toMove.length === 1 ? '' : 's'} updated)`);
+  return { moved: toMove.length, removed: dupes.length };
 }
 
 // key/bpm/lead/notes are per-INSTANCE: the same song can call for a

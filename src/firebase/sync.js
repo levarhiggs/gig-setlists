@@ -43,6 +43,23 @@ export async function saveSongs(songs) {
   await batch.commit();
 }
 
+export async function deleteSong(songId) {
+  await deleteDoc(songRef(songId));
+}
+
+// Every song placement in every gig, as [{ gigId, instance }]. Throws if any
+// gig can't be read, so callers never act on a partial picture.
+export async function listAllInstances() {
+  const out = [];
+  for (const g of await listGigs()) {
+    if (!g.gigId) continue;
+    const bundle = await loadGigBundle(g.gigId, { withSongs: false });
+    if (!bundle) continue;
+    for (const instance of Object.values(bundle.instances)) out.push({ gigId: g.gigId, instance });
+  }
+  return out;
+}
+
 export async function getAllSongs() {
   const snap = await getDocs(collection(db, 'songs'));
   const songs = {};
