@@ -17,7 +17,7 @@
 //     non-empty set (confirm) or exit to the main menu (cancel).
 
 import {
-  getState, getSong, updateSongLyrics, updateSongTitle, updateInstanceAttributes, removeInstance, getSongsForSet, getOrderedSets,
+  getState, getSong, updateSongLyrics, updateSongTitle, updateSongArtist, updateInstanceAttributes, removeInstance, getSongsForSet, getOrderedSets,
 } from '../../data/store.js';
 import { sortInstancesForDisplay } from '../../lib/ordering.js';
 import { makeEditable } from '../../ui/editable-text.js';
@@ -54,6 +54,10 @@ export function openAttributeModal(instanceId, { onLinkRequested } = {}) {
       </div>
       <p class="field-hint attr-title-hint">Tap the title to rename this song everywhere it appears</p>
       <div class="modal-body">
+        <label class="field">
+          <span class="field-label">Artist <span class="field-hint">(all gigs)</span></span>
+          <input type="text" id="attr-artist" value="${escapeAttr(song.artist)}" placeholder="Optional">
+        </label>
         <div class="field">
           <div class="field-label-row">
             <span class="field-label">Lyrics <span class="field-hint">(tap to view full-screen)</span></span>
@@ -112,6 +116,10 @@ export function openAttributeModal(instanceId, { onLinkRequested } = {}) {
 
   wireLyricsControls();
   wireTitleEditing();
+  // Artist lives on the shared song, saved as soon as the field is left.
+  modalEl.querySelector('#attr-artist').addEventListener('change', e => {
+    updateSongArtist(currentSongId, e.target.value);
+  });
 
   if (onLinkRequested) {
     modalEl.querySelector('#attr-link-btn').addEventListener('click', () => {
@@ -295,6 +303,7 @@ function loadInstanceIntoMaximizedView(nextInstance) {
   maxTextarea.value = nextSong.lyrics || '';
   maxTextarea.scrollTop = 0;
   modalEl.querySelector('#attr-lyrics').value = nextSong.lyrics || '';
+  modalEl.querySelector('#attr-artist').value = nextSong.artist ?? '';
   modalEl.querySelector('#attr-key').value = nextInstance.key ?? '';
   modalEl.querySelector('#attr-bpm').value = nextInstance.bpm ?? '';
   modalEl.querySelector('#attr-lead').value = nextInstance.lead ?? '';

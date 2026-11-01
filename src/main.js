@@ -141,7 +141,7 @@ importInput.addEventListener('change', async () => {
   if (!file) return;
   try {
     const { sheetName, rows } = await fileToRows(file);
-    const data = importGigFromRows(rows, sheetName);
+    const data = importGigFromRows(rows, sheetName, null, getState().songs);
     loadGig(data);
     console.log('Imported gig:', data.gig, data);
     try {
@@ -184,6 +184,7 @@ initLinking({
   },
 });
 document.addEventListener('linkSelectionChanged', () => renderGigView(gigViewEl));
+document.addEventListener('settingschanged', () => renderGigView(gigViewEl));
 
 linkModeBtn.addEventListener('click', () => {
   if (isLinkModeOn()) {

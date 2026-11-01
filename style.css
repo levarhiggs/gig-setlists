@@ -109,6 +109,89 @@ html, body {
   background: #262a36;
 }
 
+/* Bulk Import row: the item plus a small (i) button that opens the format help */
+.dropdown-row {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid #262a36;
+}
+
+.dropdown-row .dropdown-item {
+  flex: 1;
+  border-bottom: none;
+}
+
+.dropdown-info {
+  flex: none;
+  width: 44px;
+  background: none;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font: italic 700 0.85rem Georgia, serif;
+  color: #8a8f9c;
+}
+
+.dropdown-info span {
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dropdown-info:active {
+  background: #262a36;
+}
+
+.import-help p,
+.import-help ul {
+  margin: 0;
+  color: #d4d7de;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.import-help .field-hint {
+  color: #8a8f9c;
+}
+
+.import-help-list {
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.import-help-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.import-help-table th {
+  text-align: left;
+  color: #8a8f9c;
+  font-size: 0.8rem;
+  padding: 0 8px 6px 0;
+}
+
+.import-help-table td {
+  border-top: 1px solid #262a36;
+  padding: 8px 8px 8px 0;
+  vertical-align: top;
+  color: #f2f2f2;
+}
+
+.import-help-table td:first-child {
+  white-space: nowrap;
+  padding-right: 12px;
+}
+
 .dropdown-item-danger {
   color: #ff8a8a;
 }
@@ -546,6 +629,154 @@ body.modal-open {
   accent-color: #4c6ef5;
 }
 
+.stored-song-item.hidden,
+.stored-song-nomatch.hidden,
+.tidy-row.hidden {
+  display: none;
+}
+
+.stored-song-search {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 6px;
+}
+
+.stored-song-count {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+}
+
+.stored-song-artist,
+.song-artist {
+  color: #8a8f9c;
+  font-size: 0.85em;
+  font-weight: 400;
+  margin-left: 6px;
+}
+
+/* Settings */
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 4px 0;
+}
+
+.settings-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.settings-name {
+  font-size: 1rem;
+  color: #f2f2f2;
+}
+
+.settings-switch {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: none;
+  width: 48px;
+  height: 28px;
+  border-radius: 14px;
+  background: #363c4d;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.settings-switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #f2f2f2;
+  transition: transform 0.15s;
+}
+
+.settings-switch:checked {
+  background: #4c6ef5;
+}
+
+.settings-switch:checked::after {
+  transform: translateX(20px);
+}
+
+/* Tidy Song Names */
+.tidy-intro {
+  color: #b9bdc8;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.tidy-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: #d4d7de;
+}
+
+.tidy-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tidy-row {
+  border: 1px solid #262a36;
+  border-radius: 10px;
+  padding: 10px;
+  background: #14161d;
+}
+
+.tidy-guessed {
+  border-left: 3px solid #4c6ef5;
+}
+
+.tidy-was {
+  font-size: 0.8rem;
+  color: #8a8f9c;
+  margin-bottom: 6px;
+  overflow-wrap: anywhere;
+}
+
+.tidy-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tidy-fields {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tidy-fields input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.tidy-swap {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  background: #262a36;
+  color: #f2f2f2;
+  border: 1px solid #363c4d;
+  border-radius: 8px;
+  font-size: 1.2rem;
+}
+
 .stored-song-title {
   font-size: 0.95rem;
   overflow: hidden;
@@ -588,7 +819,9 @@ body.modal-open {
 
 .field input,
 .field select,
-.field textarea {
+.field textarea,
+.stored-song-search,
+.tidy-fields input {
   background: #20242f;
   border: 1px solid #363c4d;
   border-radius: 8px;
@@ -601,7 +834,9 @@ body.modal-open {
 
 .field input:focus,
 .field select:focus,
-.field textarea:focus {
+.field textarea:focus,
+.stored-song-search:focus,
+.tidy-fields input:focus {
   outline: none;
   border-color: #4c6ef5;
 }

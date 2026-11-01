@@ -11,6 +11,7 @@ import {
   saveGigBundle, getAllSongs as getAllSongsRemote,
 } from '../firebase/sync.js';
 import { reindex } from '../lib/ordering.js';
+import { findMatchingSong } from '../lib/song-names.js';
 import { makeSet, makeLink, makeGig, makeSong, makeSongInstance, newInstanceId, newLinkId, ORDER_STEP } from './models.js';
 import { assignColor } from '../lib/colors.js';
 import { uploadSongAudio, deleteSongAudio } from '../firebase/audio-storage.js';
@@ -56,6 +57,27 @@ export function loadGig({ gig, sets, instances, links, songs }) {
   notify();
 }
 
+// Opening a gig only brings in the songs that gig uses. The Add Song picker
+// and Tidy Song Names need the WHOLE library (a new gig has no songs yet), so
+// they call this first. Songs already in memory are kept as-is (never
+// clobbered by an older server copy); if the read fails or is slow we carry
+// on with what we have.
+export async function loadSongLibrary() {
+  try {
+    const all = await Promise.race([
+      getAllSongsRemote(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('library load timed out')), 8000)),
+    ]);
+    let added = 0;
+    for (const [id, song] of Object.entries(all)) {
+      if (!state.songs[id]) { state.songs[id] = song; added++; }
+    }
+    if (added) notify();
+  } catch (err) {
+    console.warn('Could not load the full song library:', err);
+  }
+}
+
 export function upsertSong(song) {
   state.songs[song.songId] = song;
   notify();
@@ -86,6 +108,45 @@ export function updateSongTitle(songId, title) {
   notify();
   saveSongRemote(song).catch(err => console.error('saveSong failed:', err));
   log('rename-song', `Renamed "${oldTitle}" to "${trimmed}"`);
+}
+
+// Artist is optional and may be cleared (blank → null). Like title it lives
+// on the shared Song record; songId never changes.
+export function updateSongArtist(songId, artist) {
+  const song = state.songs[songId];
+  if (!song) return;
+  const next = (artist || '').trim() || null;
+  if (next === (song.artist || null)) return;
+  song.artist = next;
+  song.updatedAt = new Date().toISOString();
+  notify();
+  saveSongRemote(song).catch(err => console.error('saveSong failed:', err));
+  log('edit-artist', next ? `Set artist for "${song.title}" to "${next}"` : `Cleared artist for "${song.title}"`);
+}
+
+// Batch Title/Artist update from Add+ → Tidy Song Names. Only songs whose
+// title or artist actually changed are written (song docs only — gigs,
+// placements, links, lyrics and audio are untouched). Resolves to the number
+// of songs whose save failed (their on-screen change still applies).
+export async function applySongNameFixes(fixes) {
+  const changed = [];
+  for (const { songId, title, artist } of fixes) {
+    const song = state.songs[songId];
+    const nextTitle = (title || '').trim();
+    const nextArtist = (artist || '').trim() || null;
+    if (!song || !nextTitle) continue;
+    if (nextTitle === song.title && nextArtist === (song.artist || null)) continue;
+    song.title = nextTitle;
+    song.artist = nextArtist;
+    song.updatedAt = new Date().toISOString();
+    changed.push(song);
+  }
+  if (!changed.length) return 0;
+  notify();
+  const results = await Promise.allSettled(changed.map(s => saveSongRemote(s)));
+  const failed = results.filter(r => r.status === 'rejected').length;
+  log('tidy-song-names', `Split Title/Artist on ${changed.length} song${changed.length === 1 ? '' : 's'}`);
+  return failed;
 }
 
 // key/bpm/lead/notes are per-INSTANCE: the same song can call for a
@@ -602,11 +663,15 @@ export function addSongsToSet({ existingSongIds = [], newSongFields = null }, se
     // (used by mostRecentInstanceValuesFor when this song has no
     // instances anywhere yet), but the values the user just typed belong
     // on THIS placement, not shared globally.
-    const song = makeSong({ ...songFields, key, bpm, lead, notes });
-    if (lyrics) song.lyrics = lyrics;
-    if (!state.songs[song.songId]) {
-      state.songs[song.songId] = song;
-      saveSongRemote(song).catch(err => console.error('saveSong failed:', err));
+    // Same title+artist already in the library → reuse it, never a second copy.
+    let song = findMatchingSong(state.songs, songFields.title, songFields.artist);
+    if (!song) {
+      song = makeSong({ ...songFields, key, bpm, lead, notes });
+      if (lyrics) song.lyrics = lyrics;
+      if (!state.songs[song.songId]) {
+        state.songs[song.songId] = song;
+        saveSongRemote(song).catch(err => console.error('saveSong failed:', err));
+      }
     }
     nextOrder += ORDER_STEP;
     const instance = makeSongInstance({ songId: song.songId, setId, order: nextOrder, key, bpm, lead, notes });

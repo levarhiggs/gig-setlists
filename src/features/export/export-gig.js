@@ -8,6 +8,8 @@
 
 import { getState, getOrderedSets, getSongsForSet } from '../../data/store.js';
 import { sortInstancesForDisplay } from '../../lib/ordering.js';
+import { songLabel } from '../../lib/song-names.js';
+import { getShowArtists } from '../../lib/settings.js';
 import { isStruckHiddenInSet, rowMetaText } from '../gig-view/gig-view.js';
 import { fileSlug, downloadBlob, toast } from '../../ui/output-helpers.js';
 
@@ -18,6 +20,7 @@ const STATUS_ICON = { done: '✅', cut: '❌' };
 export function buildExportModel() {
   const state = getState();
   if (!state.gig) return null;
+  const showArtists = getShowArtists();
 
   const sets = getOrderedSets().map(set => {
     const hideStruck = isStruckHiddenInSet(set.setId);
@@ -30,7 +33,7 @@ export function buildExportModel() {
       const link = inst.linkId ? state.links[inst.linkId] : null;
       rows.push({
         seq: i + 1, // same numbering the app shows (gaps where songs are hidden)
-        title: state.songs[inst.songId]?.title || '(unknown song)',
+        title: (showArtists ? songLabel(state.songs[inst.songId]) : state.songs[inst.songId]?.title) || '(unknown song)',
         meta: rowMetaText(inst, set.attributeDisplay),
         status,
         linkId: link ? link.linkId : null,

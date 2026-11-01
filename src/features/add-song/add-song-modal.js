@@ -4,12 +4,15 @@
 // creating a brand-new song. Save adds every checked stored song plus
 // (if filled in) the new song to a set the user then picks.
 
-import { getState, addSongsToSet } from '../../data/store.js';
+import { getState, addSongsToSet, loadSongLibrary } from '../../data/store.js';
+import { nameKey } from '../../lib/song-names.js';
 
 let modalEl = null;
 const checkedSongIds = new Set();
 
-export function openAddSongModal() {
+export async function openAddSongModal() {
+  // The gig only holds the songs it uses; pull in the whole library first.
+  await loadSongLibrary();
   closeAddSongModal();
   checkedSongIds.clear();
 
@@ -27,20 +30,27 @@ export function openAddSongModal() {
       <div class="modal-body add-song-columns">
         <div class="add-song-col">
           <h3 class="add-song-col-header">Stored Songs</h3>
+          ${allSongs.length ? `
+            <input type="search" id="stored-song-search" class="stored-song-search" placeholder="Search songs…" autocomplete="off" aria-label="Search stored songs">
+            <p class="field-hint stored-song-count" id="stored-song-count" aria-live="polite"></p>` : ''}
           <div class="stored-song-list">
             ${allSongs.length ? allSongs.map(s => `
-              <label class="stored-song-item">
+              <label class="stored-song-item" data-search="${escapeAttr(`${s.title} ${s.artist || ''}`.toLowerCase())}">
                 <input type="checkbox" class="stored-song-checkbox" data-song-id="${s.songId}">
-                <span class="stored-song-title">${escapeHtml(s.title)}</span>
+                <span class="stored-song-title">${escapeHtml(s.title)}${s.artist ? ` <span class="stored-song-artist">${escapeHtml(s.artist)}</span>` : ''}</span>
               </label>
-            `).join('') : '<p class="empty-hint">No songs in the library yet.</p>'}
+            `).join('') + '<p class="empty-hint stored-song-nomatch hidden">No songs match.</p>' : '<p class="empty-hint">No songs in the library yet.</p>'}
           </div>
         </div>
         <div class="add-song-col">
           <h3 class="add-song-col-header">New Song</h3>
           <label class="field">
             <span class="field-label">Title <span class="field-hint">(required)</span></span>
-            <input type="text" id="new-song-title" placeholder="Song title">
+            <input type="text" id="new-song-title" placeholder="Song title (without the artist)">
+          </label>
+          <label class="field">
+            <span class="field-label">Artist</span>
+            <input type="text" id="new-song-artist" placeholder="Optional">
           </label>
           <label class="field">
             <span class="field-label">Key</span>
@@ -77,10 +87,37 @@ export function openAddSongModal() {
   modalEl.querySelector('.modal-close').addEventListener('click', close);
   modalEl.addEventListener('click', e => { if (e.target === modalEl) close(); });
 
+  // Search: show only songs whose title or artist contains the typed text
+  // (any position, any case; punctuation like apostrophes is ignored).
+  // Rows are hidden, not removed, so ticked songs stay ticked while filtering.
+  const searchEl = modalEl.querySelector('#stored-song-search');
+  const countEl = modalEl.querySelector('#stored-song-count');
+  const noMatchEl = modalEl.querySelector('.stored-song-nomatch');
+  const rows = [...modalEl.querySelectorAll('.stored-song-item')];
+
+  const applyFilter = () => {
+    if (!searchEl) return;
+    const q = searchEl.value.trim().toLowerCase();
+    const qKey = nameKey(q);
+    let shown = 0;
+    for (const row of rows) {
+      const hay = row.dataset.search;
+      const match = !q || hay.includes(q) || (qKey && nameKey(hay).includes(qKey));
+      row.classList.toggle('hidden', !match);
+      if (match) shown++;
+    }
+    noMatchEl?.classList.toggle('hidden', shown > 0);
+    const sel = checkedSongIds.size ? ` · ${checkedSongIds.size} selected` : '';
+    countEl.textContent = (q ? `${shown} of ${rows.length} songs` : `${rows.length} songs`) + sel;
+  };
+  searchEl?.addEventListener('input', applyFilter);
+  applyFilter();
+
   modalEl.querySelectorAll('.stored-song-checkbox').forEach(cb => {
     cb.addEventListener('change', () => {
       if (cb.checked) checkedSongIds.add(cb.dataset.songId);
       else checkedSongIds.delete(cb.dataset.songId);
+      applyFilter();
     });
   });
 
@@ -98,6 +135,7 @@ export function openAddSongModal() {
 
     const newSongFields = hasNewSong ? {
       title,
+      artist: modalEl.querySelector('#new-song-artist').value.trim() || null,
       key: modalEl.querySelector('#new-song-key').value.trim() || null,
       bpm: modalEl.querySelector('#new-song-bpm').value.trim() || null,
       lead: modalEl.querySelector('#new-song-lead').value.trim() || null,
@@ -165,4 +203,8 @@ function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str ?? '';
   return div.innerHTML;
+}
+
+function escapeAttr(str) {
+  return escapeHtml(str).replace(/"/g, '&quot;');
 }

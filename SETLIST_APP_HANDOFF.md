@@ -67,6 +67,7 @@ The import sheet columns (exact headers from `July 12`):
 | `COUNT` | Running index across the whole gig | Ignore for logic; do not persist. |
 | `SEQUENCE` | Intended per-set order | **Currently empty** in the import. On import, if blank, fall back to sheet row order within the set. |
 | `SONGS` | Song title | The display title. May include artist prefix (e.g. `Al Green - Let's Stay Together`). Store verbatim. |
+| `ARTIST` | Artist *(added later; optional)* | Stored in `Song.artist`. `SONGS` should then hold the title only. A row whose SONGS+ARTIST match a library song reuses it (see `lib/song-names.js`). |
 | `KEY` | Key | **Free text, may hold modulations** like `A > Bb` or `D > G > Bb > D`. Do not parse or validate — store and display as-is. |
 | `NOTES` | Per-song notes | Free text. Often contains transition/medley intentions (see §3.1). |
 | `LEAD` | Assigned singer | **May list multiple** (e.g. `Clarence / Tatiana`). Store verbatim; display as-is. |

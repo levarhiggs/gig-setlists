@@ -1,4 +1,4 @@
-const CACHE = 'gig-setlists-v7';
+const CACHE = 'gig-setlists-v10';
 const SHELL = [
   '/gig-setlists/',
   '/gig-setlists/index.html',
@@ -22,6 +22,7 @@ const SHELL = [
   '/gig-setlists/src/features/gig-view/gig-view.js',
   '/gig-setlists/src/features/identity/identity.js',
   '/gig-setlists/src/features/identity/name-prompt.js',
+  '/gig-setlists/src/features/import-help/import-help.js',
   '/gig-setlists/src/features/linking/link-picker.js',
   '/gig-setlists/src/features/linking/linking.js',
   '/gig-setlists/src/features/new-gig/new-gig-modal.js',
@@ -35,6 +36,8 @@ const SHELL = [
   '/gig-setlists/src/features/player/player-lyrics.js',
   '/gig-setlists/src/features/save-gig/save-gig.js',
   '/gig-setlists/src/features/sets/set-menu.js',
+  '/gig-setlists/src/features/settings/settings-modal.js',
+  '/gig-setlists/src/features/song-names/tidy-song-names.js',
   '/gig-setlists/src/firebase/activity-log.js',
   '/gig-setlists/src/firebase/audio-storage.js',
   '/gig-setlists/src/firebase/init.js',
@@ -47,6 +50,8 @@ const SHELL = [
   '/gig-setlists/src/lib/ordering.js',
   '/gig-setlists/src/lib/set-drag.js',
   '/gig-setlists/src/lib/set-header-gestures.js',
+  '/gig-setlists/src/lib/settings.js',
+  '/gig-setlists/src/lib/song-names.js',
   '/gig-setlists/src/lib/xlsx.js',
   '/gig-setlists/src/main.js',
   '/gig-setlists/src/ui/add-menu.js',

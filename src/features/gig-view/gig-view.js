@@ -2,6 +2,7 @@
 
 import { getState, getOrderedSets, getSongsForSet, renameGig, renameSet, toggleCompleted, addSet } from '../../data/store.js';
 import { sortInstancesForDisplay } from '../../lib/ordering.js';
+import { getShowArtists } from '../../lib/settings.js';
 import { makeEditable, prepareEditable, enterEditMode } from '../../ui/editable-text.js';
 import { bindRowGestures } from '../../lib/gestures.js';
 import { startChainDrag } from '../../lib/chain-drag.js';
@@ -218,7 +219,7 @@ function renderSongRow(instance, state, seq, linkMode, setId, setLocked, attribu
     ${dot}
     ${playGlyph}
     ${statusIcon ? `<span class="song-status-icon">${statusIcon}</span>` : ''}
-    <span class="song-title">${escapeHtml(song.title || '(unknown song)')}</span>
+    <span class="song-title">${escapeHtml(song.title || '(unknown song)')}${song.artist && getShowArtists() ? ` <span class="song-artist">${escapeHtml(song.artist)}</span>` : ''}</span>
     ${meta ? `<span class="song-meta">${escapeHtml(meta)}</span>` : ''}
     ${grip}
   `;

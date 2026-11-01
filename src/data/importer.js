@@ -2,6 +2,7 @@
 // Sets + Instances, per SETLIST_APP_HANDOFF.md §3.
 
 import { makeSong, makeSongInstance, makeSet, makeGig, ORDER_STEP } from './models.js';
+import { findMatchingSong } from '../lib/song-names.js';
 
 // Some source spreadsheets carry mis-encoded apostrophes (curly quote
 // round-tripped through the wrong codepage) — normalize to a straight one
@@ -18,10 +19,12 @@ function cleanNumber(v) {
   return Number.isFinite(n) ? n : null;
 }
 
-// rows: array of objects with keys SET, COUNT, SEQUENCE, SONGS, KEY, NOTES,
-// LEAD, BPM, "EST.DURATION" (as produced by sheetToRows in xlsx.js).
+// rows: array of objects with keys SET, COUNT, SEQUENCE, SONGS, ARTIST (optional),
+// KEY, NOTES, LEAD, BPM, "EST.DURATION" (as produced by sheetToRows in xlsx.js).
 // gigId, if provided, overrides the auto-derived id (e.g. for a fixed seed doc).
-export function importGigFromRows(rows, gigName, gigId = null) {
+// existingSongs, if provided, is the current library: a row that is the same
+// song (title + artist) reuses that record instead of creating a duplicate.
+export function importGigFromRows(rows, gigName, gigId = null, existingSongs = null) {
   const songs = {};
   const sets = {};
   const instances = {};
@@ -64,6 +67,7 @@ export function importGigFromRows(rows, gigName, gigId = null) {
       const title = cleanText(row.SONGS);
       if (!title) return;
 
+      const artist = cleanText(row.ARTIST);
       const key = cleanText(row.KEY);
       const notes = cleanText(row.NOTES);
       const lead = cleanText(row.LEAD);
@@ -74,8 +78,12 @@ export function importGigFromRows(rows, gigName, gigId = null) {
       // Song record still gets a copy of the FIRST row's values as a
       // starting "template" for future placements of this song to
       // pre-fill from, but is never treated as canonical.
-      const song = makeSong({ title, key, bpm, lead, notes });
-      if (!songs[song.songId]) songs[song.songId] = song;
+      let song = findMatchingSong(songs, title, artist) || findMatchingSong(existingSongs, title, artist);
+      if (!song) {
+        song = makeSong({ title, artist, key, bpm, lead, notes });
+        // Library songs are left out of the bundle, so their lyrics/audio stay as-is.
+        song = songs[song.songId] || existingSongs?.[song.songId] || (songs[song.songId] = song);
+      }
 
       const instance = makeSongInstance({
         songId: song.songId,

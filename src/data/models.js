@@ -38,11 +38,15 @@ export function newSetId(gigId, order) {
 // Spaced order values so inserts rarely require a full reindex (§13.2).
 export const ORDER_STEP = 10;
 
-export function makeSong({ title, key = null, bpm = null, lead = null, notes = null }) {
+// `title` is the song name alone; `artist` is optional. The id includes the
+// artist so two songs with the same title by different artists stay separate.
+// (Existing songs keep the ids they already have — ids are never recomputed.)
+export function makeSong({ title, artist = null, key = null, bpm = null, lead = null, notes = null }) {
   const now = new Date().toISOString();
   return {
-    songId: normalizeTitleToId(title),
+    songId: normalizeTitleToId(artist ? `${artist} ${title}` : title),
     title,
+    artist: artist || null,
     key: key || null,
     bpm: bpm == null || bpm === '' ? null : Number(bpm),
     lead: lead || null,

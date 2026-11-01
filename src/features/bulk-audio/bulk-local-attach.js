@@ -8,6 +8,7 @@
 import { getState } from '../../data/store.js';
 import { attachLocalAudio, hasLocalAudio } from '../player/local-audio-library.js';
 import { matchSongsToFiles } from '../../lib/audio-match.js';
+import { songLabel } from '../../lib/song-names.js';
 
 let modalEl = null;
 let selectedFiles = []; // File[]
@@ -86,7 +87,7 @@ function renderReview(songs, candidatesBySong) {
         const already = hasLocalAudio(song.songId);
         return `
           <div class="bulk-audio-row">
-            <span class="bulk-audio-filename" title="${escapeHtml(song.title)}">${escapeHtml(song.title)}${already ? ' <span class="field-hint">(already attached)</span>' : ''}</span>
+            <span class="bulk-audio-filename" title="${escapeHtml(songLabel(song))}">${escapeHtml(songLabel(song))}${already ? ' <span class="field-hint">(already attached)</span>' : ''}</span>
             <select class="bulk-audio-select" data-song-id="${song.songId}">
               <option value="">— Don't attach —</option>
               ${candidates.map(c => `<option value="${escapeHtml(c.fileName)}" ${c.fileName === songChoices.get(song.songId) ? 'selected' : ''}>${Math.round(c.score * 100)}% — ${escapeHtml(c.fileName)}</option>`).join('')}
@@ -97,7 +98,7 @@ function renderReview(songs, candidatesBySong) {
     </div>
     ${withoutCandidates.length ? `
       <div class="field-label" style="margin-top:12px;">No file found for (${withoutCandidates.length})</div>
-      <p class="field-hint">${withoutCandidates.map(s => escapeHtml(s.title)).join(', ')}</p>
+      <p class="field-hint">${withoutCandidates.map(s => escapeHtml(songLabel(s))).join(', ')}</p>
     ` : ''}
     <button class="btn-link-open" id="bulk-local-attach-btn">Attach ${countChosen()} File${countChosen() === 1 ? '' : 's'}</button>
     <p class="field-hint" id="bulk-local-progress"></p>

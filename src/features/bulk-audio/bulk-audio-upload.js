@@ -5,6 +5,7 @@
 
 import { getState, attachAudioToSong } from '../../data/store.js';
 import { matchFilesToSongs } from '../../lib/audio-match.js';
+import { songLabel } from '../../lib/song-names.js';
 
 let modalEl = null;
 let pendingFiles = []; // { file, songId | null }
@@ -67,7 +68,7 @@ function renderReview(songs) {
           <span class="bulk-audio-filename" title="${escapeHtml(pf.file.name)}">${escapeHtml(pf.file.name)}</span>
           <select class="bulk-audio-select" data-index="${i}">
             <option value="">— Skip this file —</option>
-            ${songs.map(s => `<option value="${s.songId}" ${s.songId === pf.songId ? 'selected' : ''}>${escapeHtml(s.title)}</option>`).join('')}
+            ${songs.map(s => `<option value="${s.songId}" ${s.songId === pf.songId ? 'selected' : ''}>${escapeHtml(songLabel(s))}</option>`).join('')}
           </select>
         </div>
       `).join('')}
