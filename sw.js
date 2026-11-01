@@ -1,4 +1,4 @@
-const CACHE = 'gig-setlists-v11';
+const CACHE = 'gig-setlists-v12';
 const SHELL = [
   '/gig-setlists/',
   '/gig-setlists/index.html',
@@ -19,6 +19,7 @@ const SHELL = [
   '/gig-setlists/src/features/bulk-audio/bulk-audio-upload.js',
   '/gig-setlists/src/features/bulk-audio/bulk-local-attach.js',
   '/gig-setlists/src/features/export/export-gig.js',
+  '/gig-setlists/src/features/export/export-songs.js',
   '/gig-setlists/src/features/gig-view/gig-view.js',
   '/gig-setlists/src/features/identity/identity.js',
   '/gig-setlists/src/features/identity/name-prompt.js',

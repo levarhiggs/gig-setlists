@@ -213,6 +213,7 @@ No real sharing in MVP. Instead, an **Export** button that produces a clean, seq
 - **Print path:** a print-optimized layout (browser print → PDF).
 - **Phone path:** support saving a screenshot / image of the sequenced gig.
 - Export is read-only output; no editing.
+- **All Songs to Excel…** (Export menu, not tied to the open gig): the whole song library as .xlsx — sheet `Songs` (SONGS, ARTIST, LYRICS, AUDIO), optionally plus one tab per song with lyrics, linked from the LYRICS column. Needs the SheetJS CDN script (same as Bulk Import). Code: `src/features/export/export-songs.js`.
 
 ---
 

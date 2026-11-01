@@ -12,6 +12,7 @@ import { songLabel } from '../../lib/song-names.js';
 import { getShowArtists } from '../../lib/settings.js';
 import { isStruckHiddenInSet, rowMetaText } from '../gig-view/gig-view.js';
 import { fileSlug, downloadBlob, toast } from '../../ui/output-helpers.js';
+import { openExportSongs } from './export-songs.js';
 
 const STATUS_ICON = { done: '✅', cut: '❌' };
 
@@ -391,6 +392,8 @@ export function initExportMenu() {
   menu.querySelectorAll('.dropdown-item').forEach(item => {
     item.addEventListener('click', async () => {
       closeMenu();
+      // The song-library export doesn't depend on which gig is open.
+      if (item.dataset.action === 'songs-xlsx') { openExportSongs(); return; }
       const model = buildExportModel();
       if (!model) { toast('No gig loaded yet.'); return; }
 
