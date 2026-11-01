@@ -107,7 +107,7 @@ export async function listGigs() {
 
 // ── Whole-gig read ───────────────────────────────────────────────────────────
 
-export async function loadGigBundle(gigId) {
+export async function loadGigBundle(gigId, { withSongs = true } = {}) {
   const gigSnap = await getDoc(gigRef(gigId));
   if (!gigSnap.exists()) return null;
   const gig = gigSnap.data();
@@ -125,14 +125,36 @@ export async function loadGigBundle(gigId) {
   const links = {};
   linksSnap.forEach(l => { links[l.id] = l.data(); });
 
-  const songIds = [...new Set(Object.values(instances).map(i => i.songId))];
   const songs = {};
-  for (const songId of songIds) {
-    const s = await getDoc(songRef(songId));
-    if (s.exists()) songs[songId] = s.data();
+  if (withSongs) {
+    const songIds = [...new Set(Object.values(instances).map(i => i.songId))];
+    for (const songId of songIds) {
+      const s = await getDoc(songRef(songId));
+      if (s.exists()) songs[songId] = s.data();
+    }
   }
 
   return { gig, sets, instances, links, songs };
+}
+
+// ── Full backup ──────────────────────────────────────────────────────────────
+
+export const BACKUP_FORMAT = 'gig-setlists-backup';
+
+// Every gig (sets, song placements, medley links) plus the whole song
+// library, as one plain object ready for JSON.stringify. All-or-nothing: if
+// any read fails this throws, so a half-empty backup can never be written
+// out looking like a complete one.
+export async function fetchFullBackup() {
+  const gigList = await listGigs();
+  const gigs = [];
+  for (const g of gigList) {
+    if (!g.gigId) continue;
+    const bundle = await loadGigBundle(g.gigId, { withSongs: false });
+    if (bundle) gigs.push({ gig: bundle.gig, sets: bundle.sets, instances: bundle.instances, links: bundle.links });
+  }
+  const songs = await getAllSongs();
+  return { format: BACKUP_FORMAT, version: 1, createdAt: new Date().toISOString(), gigs, songs };
 }
 
 // ── Incremental mutations (used once interactions are wired) ───────────────

@@ -1,4 +1,4 @@
-const CACHE = 'gig-setlists-v6';
+const CACHE = 'gig-setlists-v7';
 const SHELL = [
   '/gig-setlists/',
   '/gig-setlists/index.html',
@@ -15,6 +15,7 @@ const SHELL = [
   '/gig-setlists/src/features/activity/activity-view.js',
   '/gig-setlists/src/features/add-song/add-song-modal.js',
   '/gig-setlists/src/features/attribute-modal/attribute-modal.js',
+  '/gig-setlists/src/features/backup/backup.js',
   '/gig-setlists/src/features/bulk-audio/bulk-audio-upload.js',
   '/gig-setlists/src/features/bulk-audio/bulk-local-attach.js',
   '/gig-setlists/src/features/export/export-gig.js',
@@ -50,6 +51,7 @@ const SHELL = [
   '/gig-setlists/src/main.js',
   '/gig-setlists/src/ui/add-menu.js',
   '/gig-setlists/src/ui/editable-text.js',
+  '/gig-setlists/src/ui/output-helpers.js',
 ];
 
 self.addEventListener('install', e => {

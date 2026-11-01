@@ -8,7 +8,7 @@ import {
   saveInstance as saveInstanceRemote, deleteInstance as deleteInstanceRemote,
   saveLink as saveLinkRemote, deleteLink as deleteLinkRemote,
   deleteSet as deleteSetRemote, loadGigBundle as loadGigBundleRemote,
-  saveGigBundle,
+  saveGigBundle, getAllSongs as getAllSongsRemote,
 } from '../firebase/sync.js';
 import { reindex } from '../lib/ordering.js';
 import { makeSet, makeLink, makeGig, makeSong, makeSongInstance, newInstanceId, newLinkId, ORDER_STEP } from './models.js';
@@ -699,6 +699,66 @@ export async function createNewGig({ name, description = '', setCount = 2 }) {
   loadGig(bundle);
   log('new-gig', `Created new gig "${name}" with ${setCount} set${setCount === 1 ? '' : 's'}`);
   return gig;
+}
+
+// Restore from Backup: adds ONE gig from a backup file as a brand-new gig
+// ("<name> (restored)") with fresh ids. It never overwrites or deletes
+// anything that exists: the gig gets its own unique id, and songs are only
+// added to the library if they're missing (an existing song — with whatever
+// lyrics/audio it has now — is left exactly as it is).
+export async function restoreGigFromBackup(backup, entry) {
+  const src = entry;
+  const newGig = makeGig({ name: `${src.gig.name || 'Gig'} (restored)`, description: src.gig.description || '' });
+  const idMap = {};
+
+  const newSets = {};
+  Object.values(src.sets)
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    .forEach((set, i) => {
+      const newId = `${newGig.gigId}_set_${i}`;
+      idMap[set.setId] = newId;
+      newSets[newId] = { ...set, setId: newId, order: i };
+    });
+  newGig.sets = Object.keys(newSets);
+
+  const newInstances = {};
+  for (const inst of Object.values(src.instances)) {
+    if (!idMap[inst.setId]) continue; // orphaned placement whose set is gone
+    const newId = newInstanceId();
+    idMap[inst.instanceId] = newId;
+    newInstances[newId] = { ...inst, instanceId: newId, setId: idMap[inst.setId] };
+  }
+
+  const newLinks = {};
+  for (const link of Object.values(src.links || {})) {
+    const members = link.memberInstanceIds.map(id => idMap[id]).filter(Boolean);
+    if (members.length < 2) continue;
+    const newId = newLinkId();
+    idMap[link.linkId] = newId;
+    newLinks[newId] = { ...link, linkId: newId, gigId: newGig.gigId, memberInstanceIds: members };
+  }
+  for (const inst of Object.values(newInstances)) {
+    inst.linkId = inst.linkId && idMap[inst.linkId] && newLinks[idMap[inst.linkId]] ? idMap[inst.linkId] : null;
+  }
+  newGig.links = Object.keys(newLinks);
+
+  // Only songs the library doesn't already have.
+  const existingSongs = await getAllSongsRemote();
+  const missingSongs = {};
+  for (const inst of Object.values(newInstances)) {
+    const song = backup.songs?.[inst.songId];
+    if (!existingSongs[inst.songId] && song) missingSongs[inst.songId] = song;
+  }
+
+  await Promise.race([
+    saveGigBundle({ gig: newGig, sets: newSets, instances: newInstances, links: newLinks, songs: missingSongs }),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Timed out restoring the gig')), 30000)),
+  ]);
+
+  const fresh = await loadGigBundleRemote(newGig.gigId);
+  loadGig(fresh);
+  log('restore-gig', `Restored "${src.gig.name}" from a backup as "${newGig.name}"`);
+  return newGig;
 }
 
 // §9 "Overwrite": update the current gig's own name/description in place

@@ -9,6 +9,7 @@
 import { getState, getOrderedSets, getSongsForSet } from '../../data/store.js';
 import { sortInstancesForDisplay } from '../../lib/ordering.js';
 import { isStruckHiddenInSet, rowMetaText } from '../gig-view/gig-view.js';
+import { fileSlug, downloadBlob, toast } from '../../ui/output-helpers.js';
 
 const STATUS_ICON = { done: '✅', cut: '❌' };
 
@@ -319,31 +320,6 @@ function printModel(model) {
 }
 
 // ── Delivery helpers ────────────────────────────────────────────────────────
-
-function fileSlug(title) {
-  return (title || 'setlist').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-') || 'setlist';
-}
-
-function downloadBlob(blob, filename) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 10000);
-}
-
-function toast(message) {
-  document.getElementById('export-toast')?.remove();
-  const el = document.createElement('div');
-  el.id = 'export-toast';
-  el.className = 'export-toast';
-  el.textContent = message;
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 2600);
-}
 
 async function copyText(text) {
   try {

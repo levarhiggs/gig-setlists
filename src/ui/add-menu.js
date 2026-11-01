@@ -3,6 +3,7 @@
 
 import { addSet } from '../data/store.js';
 import { openNewGigModal } from '../features/new-gig/new-gig-modal.js';
+import { saveBackup, chooseBackupFileToRestore } from '../features/backup/backup.js';
 import { openAddSongModal } from '../features/add-song/add-song-modal.js';
 import { openBulkLocalAttachModal } from '../features/bulk-audio/bulk-local-attach.js';
 
@@ -45,6 +46,10 @@ export function initAddMenu({ onBulkImport, onOpenSaved }) {
         onOpenSaved?.();
       } else if (action === 'attach-audio') {
         openBulkLocalAttachModal();
+      } else if (action === 'save-backup') {
+        saveBackup();
+      } else if (action === 'restore-backup') {
+        chooseBackupFileToRestore();
       }
     });
   });
