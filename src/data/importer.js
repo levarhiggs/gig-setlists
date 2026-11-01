@@ -1,7 +1,8 @@
 // importer.js — parses the Setlist Import.xlsx shape into Songs + Gig +
 // Sets + Instances, per SETLIST_APP_HANDOFF.md §3.
 
-import { makeSong, makeSongInstance, makeSet, makeGig, ORDER_STEP } from './models.js';
+import { makeSong, makeSongInstance, makeSet, makeLink, makeGig, ORDER_STEP } from './models.js';
+import { assignColor } from '../lib/colors.js';
 import { findMatchingSong } from '../lib/song-names.js';
 
 // Some source spreadsheets carry mis-encoded apostrophes (curly quote
@@ -20,7 +21,10 @@ function cleanNumber(v) {
 }
 
 // rows: array of objects with keys SET, COUNT, SEQUENCE, SONGS, ARTIST (optional),
-// KEY, NOTES, LEAD, BPM, "EST.DURATION" (as produced by sheetToRows in xlsx.js).
+// KEY, NOTES, LEAD, BPM, "EST.DURATION", plus the optional "SET NAME" and MEDLEY
+// columns written by Export → Setlist to Excel (as produced by sheetToRows in
+// xlsx.js). MEDLEY: neighbouring rows in a set with the same value become one
+// medley link. A row with a SET but no SONGS still creates (an empty) set.
 // gigId, if provided, overrides the auto-derived id (e.g. for a fixed seed doc).
 // existingSongs, if provided, is the current library: a row that is the same
 // song (title + artist) reuses that record instead of creating a duplicate.
@@ -28,6 +32,7 @@ export function importGigFromRows(rows, gigName, gigId = null, existingSongs = n
   const songs = {};
   const sets = {};
   const instances = {};
+  const links = {};
   const gig = makeGig({ name: gigName });
   if (gigId) gig.gigId = gigId;
 
@@ -45,7 +50,7 @@ export function importGigFromRows(rows, gigName, gigId = null, existingSongs = n
   setNums.forEach((setNum, setIndex) => {
     const set = makeSet({
       gigId: gig.gigId,
-      name: `Set ${setNum}`,
+      name: cleanText(bySet.get(setNum).find(r => cleanText(r['SET NAME']))?.['SET NAME']) || `Set ${setNum}`,
       order: setIndex,
       songOrderMode: 'custom', // §3.1: imported sets keep sheet order
     });
@@ -63,6 +68,7 @@ export function importGigFromRows(rows, gigName, gigId = null, existingSongs = n
       return 0; // keep original sheet order (stable sort)
     });
 
+    const placed = []; // { instance, medley } for the rows that became songs, in order
     ordered.forEach((row, i) => {
       const title = cleanText(row.SONGS);
       if (!title) return;
@@ -92,8 +98,22 @@ export function importGigFromRows(rows, gigName, gigId = null, existingSongs = n
         key, bpm, lead, notes,
       });
       instances[instance.instanceId] = instance;
+      placed.push({ instance, medley: cleanText(row.MEDLEY) });
     });
+
+    // Neighbouring rows sharing a MEDLEY value form one link (two or more).
+    for (let i = 0; i < placed.length;) {
+      let j = i + 1;
+      while (placed[i].medley && j < placed.length && placed[j].medley === placed[i].medley) j++;
+      if (j - i >= 2) {
+        const color = assignColor(Object.values(links).map(l => l.color));
+        const link = makeLink({ gigId: gig.gigId, color, memberInstanceIds: placed.slice(i, j).map(p => p.instance.instanceId) });
+        links[link.linkId] = link;
+        for (let k = i; k < j; k++) placed[k].instance.linkId = link.linkId;
+      }
+      i = j;
+    }
   });
 
-  return { gig, sets, instances, links: {}, songs };
+  return { gig, sets, instances, links, songs };
 }

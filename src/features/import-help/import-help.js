@@ -7,11 +7,13 @@ const COLUMNS = [
   ['SET', 'The set number (1, 2, 3…).', 'Required. A row with no SET is skipped.'],
   ['SONGS', 'The song title only, kept exactly as typed (e.g. Let\'s Stay Together).', 'Required. A row with no title is skipped.'],
   ['ARTIST', 'The artist (e.g. Al Green).', 'Optional. Keep it out of SONGS.'],
+  ['SET NAME', 'The name of the set (e.g. Love in the Air).', 'Optional. Blank = "Set 1", "Set 2"… Written by Export → Setlist to Excel.'],
   ['SEQUENCE', 'Order within the set.', 'Optional. If blank, the row order in the sheet is used.'],
   ['KEY', 'Free text, e.g. A > Bb.', 'Optional.'],
   ['LEAD', 'Free text, e.g. Clarence / Tatiana.', 'Optional.'],
   ['NOTES', 'Free text.', 'Optional. Never creates medley links; you link songs by hand.'],
   ['BPM', 'A number.', 'Optional.'],
+  ['MEDLEY', 'Any label, e.g. Medley 1.', 'Optional. Neighbouring rows in a set with the same label become one medley link.'],
   ['COUNT, EST.DURATION', 'Not used.', 'Leave them in or take them out.'],
 ];
 
@@ -54,6 +56,7 @@ export function openImportHelp() {
           <li>Only the <b>first sheet</b> is read. Its tab name becomes the gig name.</li>
           <li>Sets are made from the distinct SET numbers, in ascending order, named Set 1, Set 2… Songs keep your sheet order.</li>
           <li>A row whose SONGS + ARTIST match a song already in your library reuses it, so its lyrics and audio carry over. Different spelling makes a new song. If ARTIST is blank and only one library song has that title, that song is reused.</li>
+          <li><b>Round trip:</b> Export → Setlist to Excel (re-importable) writes the open gig in exactly this layout (plus SET NAME and MEDLEY). Edit it in Excel, then Add+ → Bulk Import. Done/skipped marks and the gig description aren't included, and the gig name is the tab name (31 characters max).</li>
           <li>The import always creates a new gig. It never overwrites an existing one.</li>
         </ul>
       </div>

@@ -67,6 +67,8 @@ The import sheet columns (exact headers from `July 12`):
 | `COUNT` | Running index across the whole gig | Ignore for logic; do not persist. |
 | `SEQUENCE` | Intended per-set order | **Currently empty** in the import. On import, if blank, fall back to sheet row order within the set. |
 | `SONGS` | Song title | The display title. May include artist prefix (e.g. `Al Green - Let's Stay Together`). Store verbatim. |
+| `SET NAME` | Set name *(added later; optional)* | Used as the set's name instead of "Set N". Written by Export → Setlist to Excel. |
+| `MEDLEY` | Medley label *(added later; optional)* | Neighbouring rows in a set with the same label become one link. |
 | `ARTIST` | Artist *(added later; optional)* | Stored in `Song.artist`. `SONGS` should then hold the title only. A row whose SONGS+ARTIST match a library song reuses it (see `lib/song-names.js`). |
 | `KEY` | Key | **Free text, may hold modulations** like `A > Bb` or `D > G > Bb > D`. Do not parse or validate — store and display as-is. |
 | `NOTES` | Per-song notes | Free text. Often contains transition/medley intentions (see §3.1). |
@@ -213,6 +215,7 @@ No real sharing in MVP. Instead, an **Export** button that produces a clean, seq
 - **Print path:** a print-optimized layout (browser print → PDF).
 - **Phone path:** support saving a screenshot / image of the sequenced gig.
 - Export is read-only output; no editing.
+- **Setlist to Excel (re-importable)** (Export menu): the open gig in the Bulk Import layout (SET, SET NAME, SEQUENCE, SONGS, ARTIST, KEY, LEAD, NOTES, BPM, MEDLEY), every placement in displayed order, so it can be edited in Excel and re-imported as a new gig. Not carried: done/cut marks, gig description, per-set display settings. Code: `src/features/export/export-setlist-xlsx.js`.
 - **All Songs to Excel…** (Export menu, not tied to the open gig): the whole song library as .xlsx — sheet `Songs` (SONGS, ARTIST, LYRICS, AUDIO), optionally plus one tab per song with lyrics, linked from the LYRICS column. Needs the SheetJS CDN script (same as Bulk Import). Code: `src/features/export/export-songs.js`.
 
 **Delete Gigs…** (Add+ menu): tick whole gigs, review set/song counts, delete. Saves a backup file first (aborts if that fails), removes the gig's sets/instances/links with the gig doc last (retry-safe), never touches songs/lyrics/audio, and always keeps at least one gig. Deleting the open gig switches to the most recently saved remaining one. Code: `src/features/delete-gigs/delete-gigs.js`, `deleteGigs()` in `data/store.js`, `deleteGig()` in `firebase/sync.js`.

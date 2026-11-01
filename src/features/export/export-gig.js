@@ -13,6 +13,7 @@ import { getShowArtists } from '../../lib/settings.js';
 import { isStruckHiddenInSet, rowMetaText } from '../gig-view/gig-view.js';
 import { fileSlug, downloadBlob, toast } from '../../ui/output-helpers.js';
 import { openExportSongs } from './export-songs.js';
+import { exportSetlistToExcel } from './export-setlist-xlsx.js';
 
 const STATUS_ICON = { done: '✅', cut: '❌' };
 
@@ -394,6 +395,7 @@ export function initExportMenu() {
       closeMenu();
       // The song-library export doesn't depend on which gig is open.
       if (item.dataset.action === 'songs-xlsx') { openExportSongs(); return; }
+      if (item.dataset.action === 'setlist-xlsx') { exportSetlistToExcel(); return; }
       const model = buildExportModel();
       if (!model) { toast('No gig loaded yet.'); return; }
 
