@@ -215,6 +215,8 @@ No real sharing in MVP. Instead, an **Export** button that produces a clean, seq
 - Export is read-only output; no editing.
 - **All Songs to Excel…** (Export menu, not tied to the open gig): the whole song library as .xlsx — sheet `Songs` (SONGS, ARTIST, LYRICS, AUDIO), optionally plus one tab per song with lyrics, linked from the LYRICS column. Needs the SheetJS CDN script (same as Bulk Import). Code: `src/features/export/export-songs.js`.
 
+**Delete Gigs…** (Add+ menu): tick whole gigs, review set/song counts, delete. Saves a backup file first (aborts if that fails), removes the gig's sets/instances/links with the gig doc last (retry-safe), never touches songs/lyrics/audio, and always keeps at least one gig. Deleting the open gig switches to the most recently saved remaining one. Code: `src/features/delete-gigs/delete-gigs.js`, `deleteGigs()` in `data/store.js`, `deleteGig()` in `firebase/sync.js`.
+
 ---
 
 ## 9. Persistence

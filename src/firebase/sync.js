@@ -111,6 +111,29 @@ export async function saveGigBundle({ gig, sets, instances, links, songs }) {
   await batch.commit();
 }
 
+// Removes a gig and everything under it (instances, sets, links). The gig
+// doc goes LAST, so a failure part-way leaves the gig still listed and the
+// delete can simply be run again. Songs are never touched — they're shared.
+export async function deleteGig(gigId) {
+  const setsSnap = await getDocs(collection(db, 'gigs', gigId, 'sets'));
+  for (const s of setsSnap.docs) {
+    const instSnap = await getDocs(collection(db, 'gigs', gigId, 'sets', s.id, 'instances'));
+    for (let i = 0; i < instSnap.docs.length; i += 400) {
+      const batch = writeBatch(db);
+      instSnap.docs.slice(i, i + 400).forEach(d => batch.delete(d.ref));
+      await batch.commit();
+    }
+  }
+  const linksSnap = await getDocs(collection(db, 'gigs', gigId, 'links'));
+  const rest = [...setsSnap.docs, ...linksSnap.docs];
+  for (let i = 0; i < rest.length; i += 400) {
+    const batch = writeBatch(db);
+    rest.slice(i, i + 400).forEach(d => batch.delete(d.ref));
+    await batch.commit();
+  }
+  await deleteDoc(gigRef(gigId));
+}
+
 // ── Gig list (for "Open Saved Gig…") ────────────────────────────────────────
 
 export async function listGigs() {

@@ -10,6 +10,7 @@ import {
   deleteSet as deleteSetRemote, loadGigBundle as loadGigBundleRemote,
   saveGigBundle, getAllSongs as getAllSongsRemote,
   deleteSong as deleteSongRemote, listAllInstances as listAllInstancesRemote,
+  deleteGig as deleteGigRemote, listGigs as listGigsRemote,
 } from '../firebase/sync.js';
 import { reindex } from '../lib/ordering.js';
 import { findMatchingSong } from '../lib/song-names.js';
@@ -821,6 +822,43 @@ export async function createNewGig({ name, description = '', setCount = 2 }) {
   loadGig(bundle);
   log('new-gig', `Created new gig "${name}" with ${setCount} set${setCount === 1 ? '' : 's'}`);
   return gig;
+}
+
+// Add+ → Delete Gigs…: removes whole gigs (never songs). Refuses to delete
+// every gig — with none left the app would re-seed its starter gig on the
+// next load. Gigs are deleted one at a time and the list of what's gone is
+// returned even if a later one fails, so the caller can report honestly.
+// If the open gig is among them, the most recently saved remaining gig is
+// opened instead.
+export async function deleteGigs(gigIds) {
+  const all = await listGigsRemote();
+  const remaining = all.filter(g => g.gigId && !gigIds.includes(g.gigId));
+  if (!remaining.length) throw new Error('At least one gig has to be kept.');
+
+  // Read the gig we'll switch to BEFORE deleting anything, so a failure here
+  // leaves everything untouched (and the open gig is never left deleted).
+  let fallback = null;
+  if (state.gig && gigIds.includes(state.gig.gigId)) {
+    fallback = await loadGigBundleRemote(remaining[0].gigId);
+    if (!fallback) throw new Error("Couldn't open the gig to switch to.");
+  }
+
+  const deleted = [];
+  let failure = null;
+  for (const gigId of gigIds) {
+    try {
+      const name = all.find(g => g.gigId === gigId)?.name || gigId;
+      await deleteGigRemote(gigId);
+      deleted.push(gigId);
+      logActivity({ who: getUserName(), action: 'delete-gig', description: `Deleted gig "${name}"`, gigId });
+    } catch (err) {
+      failure = err;
+      break;
+    }
+  }
+
+  if (fallback && deleted.includes(state.gig.gigId)) loadGig(fallback);
+  return { deleted, failure };
 }
 
 // Restore from Backup: adds ONE gig from a backup file as a brand-new gig
